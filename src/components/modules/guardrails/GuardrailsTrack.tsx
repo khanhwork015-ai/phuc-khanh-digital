@@ -3,8 +3,8 @@
 import { FileCheck2, ShieldCheck, Sparkles, Stamp, type LucideIcon } from "lucide-react";
 import { m, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useHeavyMotion } from "@/components/motion/useHeavyMotion";
 import type { GuardrailItem, GuardrailKey } from "@/data/guardrails";
+import { HEAVY_MOTION_MIN_WIDTH } from "@/lib/motion-env";
 import { cn } from "@/lib/utils";
 
 const icons: Record<GuardrailKey, LucideIcon> = {
@@ -22,7 +22,7 @@ function GuardrailCard({ item, className }: { item: GuardrailItem; className?: s
   return (
     <div
       className={cn(
-        "group flex h-full flex-col rounded-2xl border border-line bg-surface/55 p-6 transition-all duration-300 hover:border-line-strong hover:bg-surface md:p-8",
+        "group flex flex-col self-stretch rounded-2xl border border-line bg-surface/55 p-6 transition-all duration-300 hover:border-line-strong hover:bg-surface md:p-8",
         className,
       )}
     >
@@ -55,13 +55,20 @@ function GuardrailCard({ item, className }: { item: GuardrailItem; className?: s
 }
 
 /**
- * Máy tính (useHeavyMotion): section ghim toàn màn hình, 4 thẻ trượt ngang mượt theo cuộn dọc (spring),
- * thẻ ở tâm nổi bật, kèm bộ đếm "01 / 04" và thanh tiến trình.
+ * Desktop (>= 1024px): section ghim toàn màn hình, 4 thẻ bằng chiều cao nhau trượt ngang theo cuộn dọc.
  * Mobile/Tablet (< 1024px): carousel vuốt ngang snap-center mượt 60fps kèm bộ đếm & thanh tiến trình.
  */
 export function GuardrailsTrack({ items, header }: { items: GuardrailItem[]; header: ReactNode }) {
-  const heavy = useHeavyMotion();
-  if (!heavy) {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const update = () => setIsDesktop(window.innerWidth >= HEAVY_MOTION_MIN_WIDTH);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  if (!isDesktop) {
     return <MobileSnapTrack items={items} header={header} />;
   }
   return <PinnedTrack items={items} header={header} />;
@@ -93,7 +100,7 @@ function MobileSnapTrack({ items, header }: { items: GuardrailItem[]; header: Re
       <div
         ref={scrollerRef}
         onScroll={onScroll}
-        className="mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8"
+        className="mt-10 flex items-stretch snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8"
       >
         {items.map((item, idx) => (
           <GuardrailCard
@@ -166,7 +173,7 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
         <m.div
           ref={trackRef}
           style={{ x }}
-          className="mt-12 flex w-max gap-6 pl-[max(32px,calc((100vw-80rem)/2+32px))] pr-[max(32px,calc((100vw-80rem)/2+32px))]"
+          className="mt-12 flex w-max items-stretch gap-6 pl-[max(32px,calc((100vw-80rem)/2+32px))] pr-[max(32px,calc((100vw-80rem)/2+32px))]"
         >
           {items.map((item, idx) => (
             <GuardrailCard
@@ -175,8 +182,8 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
               className={cn(
                 "w-[min(560px,42vw)] shrink-0 will-change-transform",
                 idx === active
-                  ? "scale-[1.02] border-line-accent bg-surface shadow-[0_0_50px_-18px_rgba(233,190,87,0.3)]"
-                  : "scale-[0.96] opacity-75",
+                  ? "border-line-accent bg-surface shadow-[0_0_50px_-18px_rgba(233,190,87,0.3)]"
+                  : "opacity-80",
               )}
             />
           ))}
