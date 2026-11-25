@@ -144,7 +144,7 @@ export function HeroBell() {
     <div className="relative h-full w-full">
       <div className="absolute inset-[18%] rounded-full bg-accent/20 blur-3xl" />
       <Image
-        src="/brand/logo-mark.svg"
+        src={assetPath("/brand/logo-mark.svg")}
         alt=""
         width={612}
         height={530}
