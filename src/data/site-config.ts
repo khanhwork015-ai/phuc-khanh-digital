@@ -41,7 +41,7 @@ export const contactConfig = {
   phoneHref: "tel:0909123456",
   zaloUrl: "https://zalo.me/0909123456",
   messengerUrl: "https://m.me/phuckhanhdigital",
-  email: "lienhe@phuckhanhdigital.vn",
-  workingHours: "Thứ Hai - Thứ Bảy · 08:30 - 18:00",
-  address: "TP. Hồ Chí Minh · Phục vụ SME toàn quốc",
+  email: "phuckhanhdigital@gmail.com",
+  workingHours: "Luôn mở cửa",
+  address: "177, Ngô Quyền, Phường An Xuyên, TP. Cà Mau",
 } as const;
