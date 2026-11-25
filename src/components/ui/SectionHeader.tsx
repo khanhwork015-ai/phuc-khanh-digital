@@ -27,16 +27,26 @@ export function SectionHeader({ eyebrow, index, title, description, id, align = 
       <div className="mt-4 overflow-hidden">
         <m.h2
           id={id}
-          initial={{ y: "36%", opacity: 0 }}
+          initial={{ y: "100%", opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.35 }}
-          transition={{ duration: 0.65, ease: easeOutExpo }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.75, ease: easeOutExpo }}
           className="text-balance text-3xl font-bold leading-[1.15] tracking-[-0.025em] text-fg md:text-[2.6rem]"
         >
           {title}
         </m.h2>
       </div>
-      {description && <p className="mt-4 text-pretty text-[16.5px] leading-relaxed text-fg-2">{description}</p>}
+      {description && (
+        <m.p
+          initial={{ y: 28, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.7, delay: 0.08, ease: easeOutExpo }}
+          className="mt-4 text-pretty text-[16.5px] leading-relaxed text-fg-2"
+        >
+          {description}
+        </m.p>
+      )}
     </Reveal>
   );
 }

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
+import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
 import { ScrollScale } from "@/components/motion/ScrollScale";
 import { BakeryPhoto } from "@/components/ui/BakeryPhoto";
@@ -35,7 +36,7 @@ export function ApprovalPortalDemo() {
   return (
     <section id="cong-duyet-bai" aria-labelledby="approval-title" className="border-b border-line py-24 md:py-32">
       <div className="mx-auto grid max-w-7xl gap-14 px-5 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-        <div className="lg:pt-6">
+        <Parallax distance={30} className="lg:pt-6">
           <SectionHeader
             index="03"
             eyebrow={approvalContent.eyebrow}
@@ -55,10 +56,11 @@ export function ApprovalPortalDemo() {
               ))}
             </ul>
           </Reveal>
-        </div>
+        </Parallax>
 
         <Reveal delay={0.1} className="min-w-0">
-          {/* Khung demo phóng 0,9 → 1 và dựng thẳng 8° → 0 khi cuộn tới */}
+          {/* Khung demo phóng zoom-in + dựng thẳng + parallax khi cuộn tới */}
+          <Parallax distance={-32}>
           <ScrollScale>
           <div className="overflow-hidden rounded-2xl border border-line-strong bg-surface">
             {/* Thanh trình duyệt */}
@@ -101,6 +103,7 @@ export function ApprovalPortalDemo() {
             </div>
           </div>
           </ScrollScale>
+          </Parallax>
         </Reveal>
       </div>
     </section>

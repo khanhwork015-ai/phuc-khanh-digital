@@ -3,6 +3,7 @@
 import { AlertCircle, Check, Sparkles, X } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useState } from "react";
+import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
 import { ScrollScale } from "@/components/motion/ScrollScale";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -71,7 +72,8 @@ export function ShowcaseBeforeAfter() {
           </Reveal>
         </div>
 
-        <ScrollScale from={0.92} toExit={0.96} className="mt-12">
+        <Parallax distance={-28}>
+          <ScrollScale from={0.84} toExit={0.95} className="mt-12">
           <div role="tabpanel" id={`showcase-panel-${tab}`} aria-labelledby={`showcase-tab-${tab}`}>
           <AnimatePresence mode="wait" initial={false}>
             {tab === "caption" ? (
@@ -188,7 +190,8 @@ export function ShowcaseBeforeAfter() {
           </AnimatePresence>
           <p className="mt-6 text-[12.5px] text-fg-3">{showcaseContent.note}</p>
           </div>
-        </ScrollScale>
+          </ScrollScale>
+        </Parallax>
       </div>
     </section>
   );

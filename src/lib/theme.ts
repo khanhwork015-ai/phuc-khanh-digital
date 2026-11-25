@@ -28,7 +28,7 @@ export const radii = {
 export const easeOutExpo = [0.22, 1, 0.36, 1] as const;
 
 export const motionTokens = {
-  reveal: { y: 16, duration: 0.45, ease: easeOutExpo },
+  reveal: { y: 56, duration: 0.72, ease: easeOutExpo },
   crossFade: { duration: 0.25 },
   spring: { type: "spring", stiffness: 380, damping: 32 },
 } as const;

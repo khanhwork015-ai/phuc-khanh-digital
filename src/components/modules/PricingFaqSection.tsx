@@ -3,6 +3,7 @@
 import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useState } from "react";
+import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
 import { ScrollScale } from "@/components/motion/ScrollScale";
 import { useSmoothScroll } from "@/components/motion/SmoothScrollProvider";
@@ -94,13 +95,18 @@ export function PricingFaqSection() {
               </button>
             </Reveal>
             );
-            // Gói Khuyên dùng nghiêng nhẹ theo chuột (chỉ máy tính)
-            return plan.featured ? (
-              <TiltCard key={plan.id} maxDeg={4} className="h-full [&>div]:h-full">
+            // Gói Khuyên dùng nghiêng nhẹ theo chuột (chỉ máy tính) + parallax lệch pha giữa 3 thẻ
+            const wrapped = plan.featured ? (
+              <TiltCard maxDeg={4} className="h-full [&>div]:h-full">
                 {card}
               </TiltCard>
             ) : (
               card
+            );
+            return (
+              <Parallax key={plan.id} distance={[-28, 18, -28][idx] ?? 0} className="h-full">
+                {wrapped}
+              </Parallax>
             );
           })}
           </div>

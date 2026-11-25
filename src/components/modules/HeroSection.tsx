@@ -1,6 +1,8 @@
 import { ArrowRight, Check } from "lucide-react";
 import { AmbientShaderCanvas } from "@/components/motion/AmbientShaderCanvas";
 import { KineticMarquee } from "@/components/motion/KineticMarquee";
+import { Parallax } from "@/components/motion/Parallax";
+import { Reveal } from "@/components/motion/Reveal";
 import { ScrollScale } from "@/components/motion/ScrollScale";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -70,24 +72,28 @@ export function HeroSection() {
 
       <KineticMarquee />
 
-      {/* Khối minh họa bài đăng thực tế tách riêng để không che chuông 3D ở Hero, phóng zoom-in khi cuộn tới */}
-      <section aria-label="Minh họa bài đăng Fanpage" className="border-b border-line py-20 md:py-28">
+      {/* Khối minh họa bài đăng thực tế tách riêng để không che chuông 3D ở Hero, phóng zoom-in + parallax khi cuộn tới */}
+      <section aria-label="Minh họa bài đăng Fanpage" className="overflow-hidden border-b border-line py-20 md:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 md:px-8 lg:grid-cols-[44fr_56fr] lg:gap-16">
-          <div>
-            <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-accent">Đầu ra thực tế</p>
-            <h2 className="mt-3 text-balance text-2xl font-bold leading-snug tracking-[-0.02em] text-fg md:text-3xl">
-              Mỗi bài đăng đi qua 4 bước kiểm soát trước khi lên sóng.
-            </h2>
-            <p className="mt-4 text-[15.5px] leading-relaxed text-fg-2">
-              Từ viết caption đúng giọng thương hiệu, gắn logo gốc vào vùng an toàn, đến chờ bạn duyệt 1 chạm và tự động đăng đúng khung giờ vàng.
-            </p>
-          </div>
+          <Parallax distance={38}>
+            <Reveal>
+              <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-accent">Đầu ra thực tế</p>
+              <h2 className="mt-3 text-balance text-2xl font-bold leading-snug tracking-[-0.02em] text-fg md:text-3xl">
+                Mỗi bài đăng đi qua 4 bước kiểm soát trước khi lên sóng.
+              </h2>
+              <p className="mt-4 text-[15.5px] leading-relaxed text-fg-2">
+                Từ viết caption đúng giọng thương hiệu, gắn logo gốc vào vùng an toàn, đến chờ bạn duyệt 1 chạm và tự động đăng đúng khung giờ vàng.
+              </p>
+            </Reveal>
+          </Parallax>
 
-          <ScrollScale from={0.78} toExit={0.92} rotateXFrom={12}>
-            <TiltCard>
-              <HeroPostMockup />
-            </TiltCard>
-          </ScrollScale>
+          <Parallax distance={-44}>
+            <ScrollScale from={0.78} toExit={0.92} rotateXFrom={12}>
+              <TiltCard>
+                <HeroPostMockup />
+              </TiltCard>
+            </ScrollScale>
+          </Parallax>
         </div>
       </section>
     </>

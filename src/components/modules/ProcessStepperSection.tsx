@@ -2,6 +2,7 @@
 
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { Reveal } from "@/components/motion/Reveal";
 import { useSmoothScroll } from "@/components/motion/SmoothScrollProvider";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { processContent, processSteps } from "@/data/process-steps";
@@ -77,7 +78,7 @@ export function ProcessStepperSection() {
                   )}
 
                   {/* Bước chưa active: đổi màu chữ thay vì làm mờ, để vẫn đạt độ tương phản WCAG AA */}
-                  <div className="group/step w-full">
+                  <Reveal delay={0.04} className="group/step w-full">
                     <button
                       type="button"
                       onClick={() => {
@@ -132,7 +133,7 @@ export function ProcessStepperSection() {
                     <div className="mt-6 lg:hidden">
                       <ProcessPreview preview={s.preview} />
                     </div>
-                  </div>
+                  </Reveal>
                 </li>
               );
             })}
