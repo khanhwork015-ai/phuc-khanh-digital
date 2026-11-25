@@ -22,8 +22,8 @@ const ITEMS = [
 ];
 
 /**
- * Dải chữ chuyển động ngang phản ứng theo tốc độ cuộn (scroll-velocity marquee).
- * Tự động chạy mượt 60fps trên cả desktop và mobile; dừng đứng khi bật Reduce Motion.
+ * Dải chữ chạy vòng lặp vô tận (seamless marquee), tự tăng tốc nhẹ theo tốc độ cuộn.
+ * Dùng 2 track giống hệt nhau (không gap ngoài, mỗi track tự chừa pr-8) để dịch -50% khớp từng pixel.
  */
 export function KineticMarquee() {
   const still = useReducedMotion() === true;
@@ -31,19 +31,20 @@ export function KineticMarquee() {
   const { scrollY } = useScroll();
   const scrollVelocity = useVelocity(scrollY);
   const smoothVelocity = useSpring(scrollVelocity, { damping: 50, stiffness: 300 });
-  const velocityFactor = useTransform(smoothVelocity, [0, 1200], [0, 4], { clamp: false });
-  const direction = useRef(1);
+  const velocityFactor = useTransform(smoothVelocity, [-1500, 0, 1500], [-0.14, 0, 0.14]);
+  const direction = useRef(-1);
 
   useAnimationFrame((_, delta) => {
     if (still) return;
+    const clampedDelta = Math.min(delta, 50);
     const v = velocityFactor.get();
-    if (v < -0.1) direction.current = -1;
-    else if (v > 0.1) direction.current = 1;
+    if (v < -0.005) direction.current = 1;
+    else if (v > 0.005) direction.current = -1;
 
-    let moveBy = direction.current * -1.4 * (delta / 16.67);
-    moveBy += direction.current * Math.abs(v) * -0.9 * (delta / 16.67);
+    const baseSpeed = 0.032; // ~1.9% mỗi giây -> trôi êm, dễ đọc
+    const boost = Math.min(0.14, Math.abs(v));
+    let next = baseX.get() + direction.current * (baseSpeed + boost) * (clampedDelta / 16.67);
 
-    let next = baseX.get() + moveBy;
     if (next <= -50) next += 50;
     if (next > 0) next -= 50;
     baseX.set(next);
@@ -56,12 +57,12 @@ export function KineticMarquee() {
       aria-hidden
       className="relative overflow-hidden border-b border-line bg-surface/40 py-4 select-none"
     >
-      <m.div style={still ? undefined : { x }} className="flex w-max items-center gap-8 whitespace-nowrap">
-        {[0, 1, 2, 3].map((dup) => (
-          <div key={dup} className="flex items-center gap-8">
+      <m.div style={still ? undefined : { x }} className="flex w-max items-center whitespace-nowrap will-change-transform">
+        {[0, 1].map((dup) => (
+          <div key={dup} className="flex shrink-0 items-center gap-8 pr-8">
             {ITEMS.map((label) => (
               <span key={`${dup}-${label}`} className="flex items-center gap-8 font-mono text-[12px] tracking-[0.2em] text-fg-3">
-                <span className="text-ivory/80">{label}</span>
+                <span className="text-ivory/85">{label}</span>
                 <span className="size-1.5 rotate-45 bg-accent/80" />
               </span>
             ))}
