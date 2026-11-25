@@ -31,7 +31,9 @@ export const motionTokens = {
   reveal: { y: 16, duration: 0.45, ease: easeOutExpo },
   crossFade: { duration: 0.25 },
   spring: { type: "spring", stiffness: 380, damping: 32 },
-  lenisLerp: 0.08,
 } as const;
 
 export type ColorToken = keyof typeof colors;
+
+/** Cấu hình cuộn mượt: nguồn chính nằm trong motion-env.ts (file thuần để test được). */
+export { LENIS_DESKTOP_LERP, LENIS_TOUCH_LERP, SMOOTH_SCROLL_TOUCH } from "./motion-env";

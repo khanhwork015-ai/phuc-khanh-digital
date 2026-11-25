@@ -5,6 +5,7 @@ import { AnimatePresence, m } from "motion/react";
 import { useState } from "react";
 import { Reveal } from "@/components/motion/Reveal";
 import { useSmoothScroll } from "@/components/motion/SmoothScrollProvider";
+import { TiltCard } from "@/components/modules/hero/TiltCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { faqContent, faqItems } from "@/data/faq";
 import { PRICING_CONFIG, pricingContent } from "@/data/pricing";
@@ -34,12 +35,13 @@ export function PricingFaqSection() {
 
         {/* Bảng gói 3 cột */}
         <div className="mt-14 grid gap-5 lg:grid-cols-3">
-          {PRICING_CONFIG.map((plan, idx) => (
+          {PRICING_CONFIG.map((plan, idx) => {
+            const card = (
             <Reveal
               key={plan.id}
               delay={idx * 0.06}
               className={cn(
-                "flex flex-col rounded-2xl border p-7 transition-colors duration-200 md:p-8",
+                "flex h-full flex-col rounded-2xl border p-7 transition-colors duration-200 md:p-8",
                 plan.featured
                   ? "border-line-accent bg-surface"
                   : "border-line bg-surface/40 hover:border-line-strong",
@@ -89,7 +91,16 @@ export function PricingFaqSection() {
                 <ArrowRight size={15} strokeWidth={1.75} aria-hidden />
               </button>
             </Reveal>
-          ))}
+            );
+            // Gói Khuyên dùng nghiêng nhẹ theo chuột (chỉ máy tính)
+            return plan.featured ? (
+              <TiltCard key={plan.id} maxDeg={4} className="h-full [&>div]:h-full">
+                {card}
+              </TiltCard>
+            ) : (
+              card
+            );
+          })}
         </div>
 
         <Reveal delay={0.12}>

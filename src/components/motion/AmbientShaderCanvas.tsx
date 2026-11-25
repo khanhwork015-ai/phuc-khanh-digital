@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { BELL_3D_EVENT } from "@/components/modules/hero/HeroBell";
 import { cn } from "@/lib/utils";
 
 const SPACING = 28;
@@ -34,6 +35,12 @@ export function AmbientShaderCanvas({ className }: { className?: string }) {
     let frame = 0;
     let lastDraw = 0;
     let visible = true;
+    // Khi chuông 3D chạy thì giữ khung hiện tại, không vẽ lại (tránh hai vòng lặp vẽ cùng lúc)
+    let pausedFor3D = false;
+    const onBell3D = (e: Event) => {
+      pausedFor3D = (e as CustomEvent<boolean>).detail === true;
+    };
+    window.addEventListener(BELL_3D_EVENT, onBell3D);
     let startTimer = 0;
     let idleHandle = 0;
     const pointer = { x: -9999, y: -9999, tx: -9999, ty: -9999, active: false };
@@ -94,7 +101,7 @@ export function AmbientShaderCanvas({ className }: { className?: string }) {
 
     const loop = (t: number) => {
       frame = requestAnimationFrame(loop);
-      if (!visible || document.hidden || t - lastDraw < FRAME_MS) return;
+      if (!visible || pausedFor3D || document.hidden || t - lastDraw < FRAME_MS) return;
       lastDraw = t;
       draw(t);
     };
@@ -122,7 +129,10 @@ export function AmbientShaderCanvas({ className }: { className?: string }) {
     window.addEventListener("resize", onResize);
 
     if (isStatic) {
-      return () => window.removeEventListener("resize", onResize);
+      return () => {
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener(BELL_3D_EVENT, onBell3D);
+      };
     }
 
     const io = new IntersectionObserver(([entry]) => {
@@ -150,6 +160,7 @@ export function AmbientShaderCanvas({ className }: { className?: string }) {
       io.disconnect();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener(BELL_3D_EVENT, onBell3D);
     };
   }, []);
 

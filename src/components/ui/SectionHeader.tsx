@@ -1,3 +1,4 @@
+import { GrowLine } from "@/components/motion/GrowLine";
 import { Reveal } from "@/components/motion/Reveal";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ export function SectionHeader({ eyebrow, index, title, description, id, align = 
     <Reveal className={cn("max-w-3xl", align === "center" && "mx-auto text-center", className)}>
       <p className="flex items-center gap-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-fg-3">
         <span className="text-accent">{index}</span>
-        <span aria-hidden className="h-px w-6 bg-line-strong" />
+        <GrowLine />
         {eyebrow}
       </p>
       <h2

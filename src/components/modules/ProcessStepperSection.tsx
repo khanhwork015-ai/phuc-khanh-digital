@@ -160,8 +160,8 @@ export function ProcessStepperSection() {
               <AnimatePresence mode="wait" initial={false}>
                 <m.div
                   key={step.preview}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.25, ease: easeOutExpo }}
                 >

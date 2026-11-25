@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { ButtonLink } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { siteConfig } from "@/data/site-config";
@@ -82,6 +83,7 @@ export function Navbar() {
         {open && (
           <m.div
             id="mobile-menu"
+            data-lenis-prevent
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -107,6 +109,7 @@ export function Navbar() {
           </m.div>
         )}
       </AnimatePresence>
+      <ScrollProgress />
     </header>
   );
 }

@@ -14,6 +14,8 @@ const basePath = isGithubPages ? (process.env.NEXT_PUBLIC_BASE_PATH ?? "/phuc-kh
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Cho code phía trình duyệt biết basePath (dùng trong src/lib/asset-path.ts)
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
   ...(isGithubPages
     ? {
         output: "export",

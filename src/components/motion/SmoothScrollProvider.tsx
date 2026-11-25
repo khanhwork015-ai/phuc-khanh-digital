@@ -3,7 +3,7 @@
 import Lenis from "lenis";
 import { LazyMotion, MotionConfig } from "motion/react";
 import { createContext, useCallback, useContext, useEffect, useRef } from "react";
-import { motionTokens } from "@/lib/theme";
+import { getLenisOptions, readMotionEnv, SMOOTH_SCROLL_TOUCH } from "@/lib/motion-env";
 
 const NAV_OFFSET = -72;
 const loadMotionFeatures = () => import("./motion-features").then((mod) => mod.default);
@@ -20,10 +20,9 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Lenis chỉ làm mượt cuộn bằng con lăn chuột. Máy cảm ứng dùng cuộn gốc (scroll-behavior trong globals.css).
-    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (reduce || !finePointer) return;
+    // Máy tính: làm mượt con lăn/touchpad. Cảm ứng: syncTouch (tắt bằng SMOOTH_SCROLL_TOUCH). Giảm chuyển động: không bật.
+    const options = getLenisOptions(readMotionEnv(), SMOOTH_SCROLL_TOUCH);
+    if (!options) return;
 
     let lenis: Lenis | null = null;
     let frame = 0;
@@ -34,11 +33,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
 
     // Khởi tạo khi trình duyệt rảnh để không chen vào lần vẽ đầu tiên
     const init = () => {
-      lenis = new Lenis({
-        lerp: motionTokens.lenisLerp,
-        smoothWheel: true,
-        anchors: { offset: NAV_OFFSET },
-      });
+      lenis = new Lenis(options);
       lenisRef.current = lenis;
       frame = requestAnimationFrame(raf);
     };
@@ -56,7 +51,8 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
 
   const scrollTo = useCallback<ScrollTo>((target) => {
     if (lenisRef.current) {
-      lenisRef.current.scrollTo(target, { offset: NAV_OFFSET });
+      // Không truyền offset: Lenis tự trừ scroll-padding-top của <html>
+      lenisRef.current.scrollTo(target);
       return;
     }
     const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";

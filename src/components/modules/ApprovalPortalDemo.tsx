@@ -17,6 +17,7 @@ import {
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Reveal } from "@/components/motion/Reveal";
+import { ScrollScale } from "@/components/motion/ScrollScale";
 import { BakeryPhoto } from "@/components/ui/BakeryPhoto";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { approvalContent, approvalPost, approvalStatuses } from "@/data/approval-demo";
@@ -57,6 +58,8 @@ export function ApprovalPortalDemo() {
         </div>
 
         <Reveal delay={0.1} className="min-w-0">
+          {/* Khung demo phóng 0,9 → 1 và dựng thẳng 8° → 0 khi cuộn tới */}
+          <ScrollScale>
           <div className="overflow-hidden rounded-2xl border border-line-strong bg-surface">
             {/* Thanh trình duyệt */}
             <div className="flex items-center gap-3 border-b border-line px-4 py-3">
@@ -97,6 +100,7 @@ export function ApprovalPortalDemo() {
               </AnimatePresence>
             </div>
           </div>
+          </ScrollScale>
         </Reveal>
       </div>
     </section>

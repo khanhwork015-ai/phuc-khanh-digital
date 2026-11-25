@@ -4,6 +4,9 @@ import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { heroContent } from "@/data/site-config";
 import { HeroPostMockup } from "./HeroPostMockup";
+import { HeroBell } from "./hero/HeroBell";
+import { HeroScrollStage } from "./hero/HeroScrollStage";
+import { TiltCard } from "./hero/TiltCard";
 
 export function HeroSection() {
   return (
@@ -17,8 +20,10 @@ export function HeroSection() {
         className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-canvas"
       />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 md:px-8 lg:grid-cols-[55fr_45fr] lg:gap-12">
-        <div className="max-w-2xl">
+      <HeroScrollStage
+        bell={<HeroBell />}
+        text={
+          <>
           <div className="hero-fade-up">
             <Badge>{heroContent.badge}</Badge>
           </div>
@@ -58,15 +63,19 @@ export function HeroSection() {
               ))}
             </ul>
           </div>
-        </div>
-
-        <div className="hero-fade-up relative mx-auto w-full max-w-[460px] lg:max-w-none" style={{ animationDelay: "0.15s" }}>
-          <p className="sr-only">
-            Minh họa một bài đăng Fanpage đi qua 4 trạng thái: đang viết, gắn logo gốc, chờ duyệt và đã đăng đúng giờ.
-          </p>
-          <HeroPostMockup />
-        </div>
-      </div>
+          </>
+        }
+        visual={
+          <div className="hero-fade-up" style={{ animationDelay: "0.15s" }}>
+            <p className="sr-only">
+              Minh họa một bài đăng Fanpage đi qua 4 trạng thái: đang viết, gắn logo gốc, chờ duyệt và đã đăng đúng giờ.
+            </p>
+            <TiltCard>
+              <HeroPostMockup />
+            </TiltCard>
+          </div>
+        }
+      />
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { CopyCheck, MessageSquareWarning, Timer, type LucideIcon } from "lucide-react";
+import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { painPointsContent } from "@/data/pain-points";
@@ -25,6 +26,7 @@ export function PainPointsSection() {
                 delay={i * 0.08}
                 className="group relative flex flex-col border-line bg-surface/40 p-7 transition-colors duration-200 hover:bg-surface max-md:not-first:border-t md:not-first:border-l md:p-8"
               >
+                <Parallax distance={[0, 16, 24][i] ?? 0} className="flex flex-1 flex-col">
                 <div className="flex items-center justify-between">
                   <span className="flex size-10 items-center justify-center rounded-xl border border-line text-fg-2 transition-colors duration-200 group-hover:border-line-accent group-hover:text-accent">
                     <Icon size={19} strokeWidth={1.5} aria-hidden />
@@ -37,6 +39,7 @@ export function PainPointsSection() {
                   <span aria-hidden className="size-1.5 rounded-full bg-red-400/70" />
                   {item.symptom}
                 </p>
+                </Parallax>
               </Reveal>
             );
           })}
