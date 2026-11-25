@@ -150,7 +150,7 @@ export function HeroBell() {
   }, []);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full p-4">
       <div className="absolute inset-[15%] rounded-full bg-accent/20 blur-3xl" />
       <Image
         src={assetPath("/brand/logo-mark.svg")}
@@ -166,7 +166,10 @@ export function HeroBell() {
       <canvas
         ref={canvasRef}
         data-bell
-        className={cn("absolute inset-0 h-full w-full opacity-0 transition-opacity duration-700", ready && "opacity-100")}
+        className={cn(
+          "pointer-events-none absolute -inset-6 h-[calc(100%+3rem)] w-[calc(100%+3rem)] opacity-0 transition-opacity duration-700",
+          ready && "opacity-100",
+        )}
       />
     </div>
   );

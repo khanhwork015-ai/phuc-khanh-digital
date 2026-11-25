@@ -248,7 +248,8 @@ export class BellScene {
 
   private fitCamera(): void {
     const fitHeight = Math.max(this.bellSize.y, this.bellSize.x / this.camera.aspect);
-    this.baseDistance = (fitHeight / 2 / Math.tan(MathUtils.degToRad(this.camera.fov / 2))) * 1.35;
+    // Chừa dư biên 1.62x để chóp cánh cung và vòng quỹ đạo không bao giờ chạm mép canvas khi xoay/zoom
+    this.baseDistance = (fitHeight / 2 / Math.tan(MathUtils.degToRad(this.camera.fov / 2))) * 1.62;
   }
 
   private resize(): void {
@@ -267,11 +268,11 @@ export class BellScene {
     this.pointer.y += (this.pointer.ty - this.pointer.y) * 0.07;
     this.scroll += (this.targetScroll - this.scroll) * 0.1;
 
-    // Giai đoạn 1 (0 -> 0.45): zoom-in vào chuông; Giai đoạn 2 (0.45 -> 1): zoom-out lùi sâu
+    // Giai đoạn 1 (0 -> 0.45): zoom-in vừa phải vào chuông; Giai đoạn 2 (0.45 -> 1): zoom-out lùi sâu
     const zoomPhase =
       this.scroll < 0.45
-        ? 1 - 0.28 * (this.scroll / 0.45)
-        : 0.72 + 0.65 * ((this.scroll - 0.45) / 0.55);
+        ? 1 - 0.15 * (this.scroll / 0.45)
+        : 0.85 + 0.55 * ((this.scroll - 0.45) / 0.55);
 
     this.pivot.rotation.y =
       MathUtils.degToRad(SWAY_DEG) * Math.sin(t * 0.65) +
