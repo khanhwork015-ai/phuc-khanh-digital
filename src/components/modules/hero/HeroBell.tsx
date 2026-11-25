@@ -159,8 +159,8 @@ export function HeroBell() {
         height={530}
         unoptimized
         className={cn(
-          "relative h-full w-full object-contain opacity-45 transition-opacity duration-700 lg:opacity-60",
-          ready && "opacity-0 lg:opacity-0",
+          "relative h-full w-full object-contain opacity-90 transition-opacity duration-700",
+          ready && "opacity-0",
         )}
       />
       <canvas

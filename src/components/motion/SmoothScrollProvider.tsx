@@ -20,38 +20,31 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
-    // Máy tính: làm mượt con lăn/touchpad. Cảm ứng: syncTouch (tắt bằng SMOOTH_SCROLL_TOUCH). Giảm chuyển động: không bật.
     const options = getLenisOptions(readMotionEnv(), SMOOTH_SCROLL_TOUCH);
     if (!options) return;
 
-    let lenis: Lenis | null = null;
+    const lenis = new Lenis({
+      ...options,
+      wheelMultiplier: 0.95,
+    });
+    lenisRef.current = lenis;
+
     let frame = 0;
     const raf = (time: number) => {
-      lenis?.raf(time);
+      lenis.raf(time);
       frame = requestAnimationFrame(raf);
     };
-
-    // Khởi tạo khi trình duyệt rảnh để không chen vào lần vẽ đầu tiên
-    const init = () => {
-      lenis = new Lenis(options);
-      lenisRef.current = lenis;
-      frame = requestAnimationFrame(raf);
-    };
-    const idle = "requestIdleCallback" in window ? window.requestIdleCallback(init, { timeout: 1500 }) : 0;
-    const timer = idle ? 0 : window.setTimeout(init, 300);
+    frame = requestAnimationFrame(raf);
 
     return () => {
-      if (idle) window.cancelIdleCallback(idle);
-      window.clearTimeout(timer);
       cancelAnimationFrame(frame);
-      lenis?.destroy();
+      lenis.destroy();
       lenisRef.current = null;
     };
   }, []);
 
   const scrollTo = useCallback<ScrollTo>((target) => {
     if (lenisRef.current) {
-      // Không truyền offset: Lenis tự trừ scroll-padding-top của <html>
       lenisRef.current.scrollTo(target);
       return;
     }
