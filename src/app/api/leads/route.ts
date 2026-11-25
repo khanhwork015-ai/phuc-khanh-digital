@@ -1,0 +1,161 @@
+import { NextResponse } from "next/server";
+import { leadPlanLabels, type LeadFormValues } from "@/lib/lead-fields";
+import { leadSchema } from "@/lib/lead-schema";
+
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const RATE_MAX_REQUESTS = 5;
+const ipHits = new Map<string, number[]>();
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  // Dọn IP hết hạn để map không phình mãi trên instance chạy lâu
+  if (ipHits.size > 5000) {
+    for (const [key, hits] of ipHits) {
+      if (hits.every((ts) => now - ts >= RATE_WINDOW_MS)) ipHits.delete(key);
+    }
+  }
+  const prev = ipHits.get(ip) ?? [];
+  const fresh = prev.filter((ts) => now - ts < RATE_WINDOW_MS);
+  if (fresh.length >= RATE_MAX_REQUESTS) {
+    ipHits.set(ip, fresh);
+    return true;
+  }
+  fresh.push(now);
+  ipHits.set(ip, fresh);
+  return false;
+}
+
+async function postJsonWithTimeout(url: string, body: unknown, timeoutMs = 5000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    return res.ok;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Trả về số kênh đã cấu hình và số kênh gửi thành công. */
+async function dispatchNotifications(lead: LeadFormValues): Promise<{ configured: number; delivered: number }> {
+  const submittedAt = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+  const planName = leadPlanLabels[lead.plan];
+  const textLines = [
+    "LEAD TƯ VẤN MỚI - PHÚC KHÁNH DIGITAL",
+    `- Họ tên: ${lead.fullName}`,
+    `- SĐT / Zalo: ${lead.phone}`,
+    `- Gói quan tâm: ${planName}`,
+    `- Fanpage: ${lead.fanpageUrl || "(Chưa cung cấp)"}`,
+    `- Thời gian: ${submittedAt}`,
+  ].join("\n");
+
+  const tasks: Promise<boolean>[] = [];
+
+  const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+  const tgChatId = process.env.TELEGRAM_CHAT_ID;
+  if (tgToken && tgChatId) {
+    tasks.push(
+      postJsonWithTimeout(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+        chat_id: tgChatId,
+        text: textLines,
+      }),
+    );
+  }
+
+  const webhookUrls = [
+    process.env.ZALO_WEBHOOK_URL,
+    process.env.GOOGLE_SHEETS_WEBHOOK_URL,
+    process.env.LEAD_WEBHOOK_URL,
+  ].filter((u): u is string => Boolean(u));
+
+  for (const url of webhookUrls) {
+    tasks.push(
+      postJsonWithTimeout(url, {
+        source: "phuc-khanh-digital-landing",
+        fullName: lead.fullName,
+        phone: lead.phone,
+        fanpageUrl: lead.fanpageUrl,
+        plan: lead.plan,
+        planLabel: planName,
+        submittedAt,
+        message: textLines,
+      }),
+    );
+  }
+
+  if (tasks.length === 0) return { configured: 0, delivered: 0 };
+  const results = await Promise.allSettled(tasks);
+  const delivered = results.filter((r) => r.status === "fulfilled" && r.value).length;
+  return { configured: tasks.length, delivered };
+}
+
+export async function POST(req: Request) {
+  let payload: unknown;
+  try {
+    payload = await req.json();
+  } catch {
+    return NextResponse.json({ ok: false, message: "Dữ liệu gửi lên không hợp lệ." }, { status: 400 });
+  }
+
+  const parsed = leadSchema.safeParse(payload);
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    // Lỗi sai kiểu dữ liệu (thiếu trường, gửi mảng...) dùng câu tiếng Việt chung thay vì thông báo mặc định tiếng Anh của Zod
+    const message =
+      !firstIssue || firstIssue.code === "invalid_type"
+        ? "Vui lòng điền đủ họ tên, số điện thoại và gói quan tâm."
+        : firstIssue.message;
+    return NextResponse.json(
+      { ok: false, message },
+      { status: 400 },
+    );
+  }
+
+  // Honeypot: nếu bot điền ô ẩn website thì giả lập thành công nhưng bỏ qua gửi thông báo.
+  if (parsed.data.website.trim().length > 0) {
+    return NextResponse.json({ ok: true, message: "Đã ghi nhận thông tin tư vấn." });
+  }
+
+  const ip = getClientIp(req);
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { ok: false, message: "Bạn gửi quá nhiều lần trong ít phút. Vui lòng thử lại sau hoặc nhắn Zalo trực tiếp." },
+      { status: 429 },
+    );
+  }
+
+  const { configured, delivered } = await dispatchNotifications(parsed.data);
+
+  if (configured === 0) {
+    // Chưa cấu hình kênh nhận lead: dev vẫn cho qua để test giao diện, production báo lỗi để không mất lead.
+    console.warn("[leads] Chưa cấu hình TELEGRAM_* hoặc *_WEBHOOK_URL, lead không được chuyển đi.");
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { ok: false, message: "Hệ thống nhận đăng ký đang bảo trì. Bạn nhắn Zalo trực tiếp giúp đội ngũ nhé." },
+        { status: 503 },
+      );
+    }
+  } else if (delivered === 0) {
+    console.error(`[leads] Gửi lead thất bại ở cả ${configured} kênh.`);
+    return NextResponse.json(
+      { ok: false, message: "Chưa gửi được thông tin lúc này. Bạn thử lại sau ít phút hoặc nhắn Zalo trực tiếp nhé." },
+      { status: 502 },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    message: "Đã nhận yêu cầu tư vấn. Đội ngũ sẽ liên hệ với bạn trong giờ làm việc.",
+  });
+}

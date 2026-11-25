@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* Phản chiếu token từ src/lib/theme.ts */
+@theme {
+  --color-canvas: #09090b;
+  --color-surface: #111113;
+  --color-elevated: #18181b;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.16);
+  --color-line-accent: rgb(233 190 87 / 0.35);
+  --color-fg: #fafafa;
+  --color-ivory: #f8ecde;
+  --color-fg-2: #a1a1aa;
+  --color-fg-3: #8e8e98;
+  --color-accent: #e9be57;
+  --color-accent-hover: #f2ce72;
+  --color-accent-muted: rgb(233 190 87 / 0.14);
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: var(--color-canvas);
+  /* Khi không dùng Lenis (máy cảm ứng): cuộn mượt gốc và trừ chiều cao Navbar khi nhảy tới mục */
+  scroll-behavior: smooth;
+  scroll-padding-top: 72px;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent-muted);
+  color: var(--color-ivory);
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Thanh cuộn mảnh */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+}
+
+/* Lưới hairline dùng cho nền section */
+.hairline-grid {
+  background-image:
+    linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Hero: animation thuần CSS, chạy ngay khi HTML hiển thị, không chờ JavaScript (tốt cho LCP) */
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes hero-rise {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: none;
+  }
+}
+.hero-fade-up {
+  animation: hero-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* H1 là phần tử LCP: chỉ trượt, không ẩn bằng opacity */
+.hero-rise {
+  animation: hero-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Lắc nhẹ ô PIN khi nhập sai (cổng duyệt demo) */
+@keyframes pin-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  15% {
+    transform: translateX(-10px);
+  }
+  30% {
+    transform: translateX(10px);
+  }
+  45% {
+    transform: translateX(-7px);
+  }
+  60% {
+    transform: translateX(7px);
+  }
+  80% {
+    transform: translateX(-3px);
+  }
+}
+.pin-shake {
+  animation: pin-shake 0.4s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
