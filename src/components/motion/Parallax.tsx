@@ -8,17 +8,17 @@ type ParallaxProps = { children: ReactNode; distance: number; className?: string
 
 /**
  * Dịch dọc mượt theo cuộn (parallax):
- * - Desktop: biên độ tối đa ±72px.
- * - Mobile: giảm một nửa để tránh tràn khung mà vẫn có chiều sâu.
+ * - Desktop: biên độ tối đa ±96px để thấy rõ chiều sâu tách lớp.
+ * - Mobile: giảm còn 40% để giữ mượt và không tràn khung.
  */
 export function Parallax({ children, distance, className }: ParallaxProps) {
   const ref = useRef<HTMLDivElement>(null);
   const still = useReducedMotion() === true;
   const heavy = useHeavyMotion();
-  const clamped = Math.max(-72, Math.min(72, distance));
-  const d = heavy ? clamped : Math.round(clamped * 0.45);
+  const clamped = Math.max(-96, Math.min(96, distance));
+  const d = heavy ? clamped : Math.round(clamped * 0.4);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const smooth = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.35 });
+  const smooth = useSpring(scrollYProgress, { stiffness: 130, damping: 26, mass: 0.35 });
   const y = useTransform(smooth, [0, 1], still ? [0, 0] : [d, -d]);
 
   return (

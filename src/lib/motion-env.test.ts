@@ -25,8 +25,8 @@ test("hiệu ứng nặng tắt khi giảm chuyển động hoặc màn hẹp", 
   assert.equal(allowsHeavyMotion({ ...desktop, width: 800 }), false);
 });
 
-test("Lenis: máy tính lerp 0.065, cảm ứng syncTouch, giảm chuyển động thì tắt", () => {
-  assert.equal(getLenisOptions(desktop, true)?.lerp, 0.065);
+test("Lenis: máy tính lerp 0.055, cảm ứng syncTouch, giảm chuyển động thì tắt", () => {
+  assert.equal(getLenisOptions(desktop, true)?.lerp, 0.055);
   const touch = getLenisOptions(phone, true);
   assert.equal(touch?.syncTouch, true);
   assert.equal(touch?.syncTouchLerp, 0.075);

@@ -7,7 +7,7 @@ import type { LenisOptions } from "lenis";
 
 /** Bật cuộn mượt (Lenis syncTouch) trên màn cảm ứng. Đặt false để tắt bằng một dòng. */
 export const SMOOTH_SCROLL_TOUCH = true;
-export const LENIS_DESKTOP_LERP = 0.065;
+export const LENIS_DESKTOP_LERP = 0.055;
 export const LENIS_TOUCH_LERP = 0.075;
 export const HEAVY_MOTION_MIN_WIDTH = 1024;
 
