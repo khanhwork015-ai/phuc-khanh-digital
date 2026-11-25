@@ -48,7 +48,7 @@ export function HeroScrollStage({ text, bell }: HeroScrollStageProps) {
           <m.div
             aria-hidden
             style={{ y: bellY, scale: bellScale, opacity: bellOpacity }}
-            className="relative mx-auto aspect-[612/530] w-[82vw] max-w-[360px] sm:w-[400px] lg:w-full lg:max-w-[580px]"
+            className="relative mx-auto aspect-[656/538] w-[80vw] max-w-[340px] sm:w-[380px] lg:w-full lg:max-w-[500px]"
           >
             {bell}
           </m.div>

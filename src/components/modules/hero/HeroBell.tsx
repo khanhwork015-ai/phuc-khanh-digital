@@ -155,8 +155,8 @@ export function HeroBell() {
       <Image
         src={assetPath("/brand/logo-mark.svg")}
         alt=""
-        width={612}
-        height={530}
+        width={656}
+        height={538}
         unoptimized
         className={cn(
           "relative h-full w-full object-contain opacity-90 transition-opacity duration-700",

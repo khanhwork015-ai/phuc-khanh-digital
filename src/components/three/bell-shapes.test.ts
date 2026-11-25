@@ -25,5 +25,5 @@ test("giữ id hai chữ P và K để đùn dày hơn", () => {
 
 test("giữ nguyên viewBox gốc", () => {
   const { svg } = extractBellShapes(svgText);
-  assert.ok(svg.includes('viewBox="466 108 612 530"'));
+  assert.ok(svg.includes('viewBox="430 104 656 538"'));
 });
