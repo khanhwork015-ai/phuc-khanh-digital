@@ -1,9 +1,8 @@
 "use client";
 
 import { FileCheck2, ShieldCheck, Sparkles, Stamp, type LucideIcon } from "lucide-react";
-import { m, useMotionValue, useMotionValueEvent, useScroll, useTransform } from "motion/react";
+import { m, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Reveal } from "@/components/motion/Reveal";
 import { useHeavyMotion } from "@/components/motion/useHeavyMotion";
 import type { GuardrailItem, GuardrailKey } from "@/data/guardrails";
 import { cn } from "@/lib/utils";
@@ -16,14 +15,14 @@ const icons: Record<GuardrailKey, LucideIcon> = {
 };
 
 /** Mỗi px cuộn ngang tương ứng bao nhiêu px cuộn dọc (lớn hơn = trượt chậm hơn). */
-const VERTICAL_PER_HORIZONTAL = 1.5;
+const VERTICAL_PER_HORIZONTAL = 1.45;
 
 function GuardrailCard({ item, className }: { item: GuardrailItem; className?: string }) {
   const Icon = icons[item.key];
   return (
     <div
       className={cn(
-        "group flex h-full flex-col rounded-2xl border border-line bg-surface/50 p-7 transition-colors duration-200 hover:border-line-strong hover:bg-surface md:p-8",
+        "group flex h-full flex-col rounded-2xl border border-line bg-surface/55 p-6 transition-all duration-300 hover:border-line-strong hover:bg-surface md:p-8",
         className,
       )}
     >
@@ -56,26 +55,69 @@ function GuardrailCard({ item, className }: { item: GuardrailItem; className?: s
 }
 
 /**
- * Máy tính (useHeavyMotion): section được ghim, 4 thẻ trượt ngang khi cuộn dọc, kèm bộ đếm "01 / 04".
- * Điện thoại, giảm chuyển động, SSR: lưới 2 cột như cũ.
+ * Máy tính (useHeavyMotion): section ghim toàn màn hình, 4 thẻ trượt ngang mượt theo cuộn dọc (spring),
+ * thẻ ở tâm nổi bật, kèm bộ đếm "01 / 04" và thanh tiến trình.
+ * Mobile/Tablet (< 1024px): carousel vuốt ngang snap-center mượt 60fps kèm bộ đếm & thanh tiến trình.
  */
 export function GuardrailsTrack({ items, header }: { items: GuardrailItem[]; header: ReactNode }) {
   const heavy = useHeavyMotion();
   if (!heavy) {
-    return (
-      <div className="mx-auto max-w-7xl px-5 py-24 md:px-8 md:py-32">
-        {header}
-        <div className="mt-14 grid gap-4 md:grid-cols-2">
-          {items.map((item, idx) => (
-            <Reveal key={item.key} delay={idx * 0.06}>
-              <GuardrailCard item={item} />
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    );
+    return <MobileSnapTrack items={items} header={header} />;
   }
   return <PinnedTrack items={items} header={header} />;
+}
+
+function MobileSnapTrack({ items, header }: { items: GuardrailItem[]; header: ReactNode }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const [ratio, setRatio] = useState(1 / items.length);
+
+  const onScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const max = Math.max(1, el.scrollWidth - el.clientWidth);
+    const p = Math.min(1, Math.max(0, el.scrollLeft / max));
+    setActive(Math.min(items.length - 1, Math.round(p * (items.length - 1))));
+    setRatio(1 / items.length + p * (1 - 1 / items.length));
+  };
+
+  return (
+    <div className="py-20 md:py-28">
+      <div className="mx-auto flex max-w-7xl items-end justify-between gap-6 px-5 md:px-8">
+        {header}
+        <p className="shrink-0 pb-1 font-mono text-[12.5px] text-fg-3" aria-live="polite">
+          <span className="text-accent">{String(active + 1).padStart(2, "0")}</span> / {String(items.length).padStart(2, "0")}
+        </p>
+      </div>
+
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        className="mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8"
+      >
+        {items.map((item, idx) => (
+          <GuardrailCard
+            key={item.key}
+            item={item}
+            className={cn(
+              "w-[84vw] max-w-[380px] shrink-0 snap-center",
+              idx === active && "border-line-accent bg-surface",
+            )}
+          />
+        ))}
+      </div>
+
+      <div className="mx-auto mt-3 flex max-w-7xl items-center gap-4 px-5 md:px-8">
+        <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-white/[0.08]">
+          <div
+            className="h-full origin-left bg-accent transition-transform duration-150 ease-out"
+            style={{ transform: `scaleX(${ratio})` }}
+          />
+        </div>
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-3">Vuốt ngang</span>
+      </div>
+    </div>
+  );
 }
 
 function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactNode }) {
@@ -86,10 +128,11 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
   const [active, setActive] = useState(0);
 
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
-  const x = useTransform(() => -scrollYProgress.get() * distance.get());
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 130, damping: 28, mass: 0.4 });
+  const x = useTransform(() => -smoothProgress.get() * distance.get());
 
-  useMotionValueEvent(scrollYProgress, "change", (p) => {
-    setActive(Math.min(items.length - 1, Math.floor(p * items.length)));
+  useMotionValueEvent(smoothProgress, "change", (p) => {
+    setActive(Math.min(items.length - 1, Math.floor(Math.max(0, p) * items.length)));
   });
 
   useEffect(() => {
@@ -119,22 +162,31 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
             <span className="text-accent">{String(active + 1).padStart(2, "0")}</span> / {String(items.length).padStart(2, "0")}
           </p>
         </div>
+
         <m.div
           ref={trackRef}
           style={{ x }}
-          className="mt-12 flex w-max gap-5 pl-[max(32px,calc((100vw-80rem)/2+32px))] pr-[max(32px,calc((100vw-80rem)/2+32px))]"
+          className="mt-12 flex w-max gap-6 pl-[max(32px,calc((100vw-80rem)/2+32px))] pr-[max(32px,calc((100vw-80rem)/2+32px))]"
         >
           {items.map((item, idx) => (
             <GuardrailCard
               key={item.key}
               item={item}
               className={cn(
-                "w-[min(560px,42vw)] shrink-0 transition-[border-color,background-color] duration-300",
-                idx === active && "border-line-accent bg-surface",
+                "w-[min(560px,42vw)] shrink-0 will-change-transform",
+                idx === active
+                  ? "scale-[1.02] border-line-accent bg-surface shadow-[0_0_50px_-18px_rgba(233,190,87,0.3)]"
+                  : "scale-[0.96] opacity-75",
               )}
             />
           ))}
         </m.div>
+
+        <div className="mx-auto mt-8 w-full max-w-7xl px-8">
+          <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/[0.07]">
+            <m.div style={{ scaleX: smoothProgress }} className="h-full origin-left bg-accent" />
+          </div>
+        </div>
       </div>
     </div>
   );

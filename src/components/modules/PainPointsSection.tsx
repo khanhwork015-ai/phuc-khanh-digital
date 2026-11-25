@@ -1,6 +1,7 @@
 import { CopyCheck, MessageSquareWarning, Timer, type LucideIcon } from "lucide-react";
 import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
+import { ScrollScale } from "@/components/motion/ScrollScale";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { painPointsContent } from "@/data/pain-points";
 
@@ -17,16 +18,17 @@ export function PainPointsSection() {
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader index="01" eyebrow={eyebrow} title={title} description={description} id="pain-title" />
 
-        <div className="mt-14 grid overflow-hidden rounded-2xl border border-line md:grid-cols-3">
-          {items.map((item, i) => {
-            const Icon = icons[item.icon];
-            return (
-              <Reveal
-                key={item.title}
-                delay={i * 0.08}
-                className="group relative flex flex-col border-line bg-surface/40 p-7 transition-colors duration-200 hover:bg-surface max-md:not-first:border-t md:not-first:border-l md:p-8"
-              >
-                <Parallax distance={[0, 16, 24][i] ?? 0} className="flex flex-1 flex-col">
+        <ScrollScale from={0.92} toExit={0.96} className="mt-14">
+          <div className="grid overflow-hidden rounded-2xl border border-line md:grid-cols-3">
+            {items.map((item, i) => {
+              const Icon = icons[item.icon];
+              return (
+                <Reveal
+                  key={item.title}
+                  delay={i * 0.08}
+                  className="group relative flex flex-col border-line bg-surface/40 p-7 transition-colors duration-200 hover:bg-surface max-md:not-first:border-t md:not-first:border-l md:p-8"
+                >
+                  <Parallax distance={[-18, 12, 36][i] ?? 0} className="flex flex-1 flex-col">
                 <div className="flex items-center justify-between">
                   <span className="flex size-10 items-center justify-center rounded-xl border border-line text-fg-2 transition-colors duration-200 group-hover:border-line-accent group-hover:text-accent">
                     <Icon size={19} strokeWidth={1.5} aria-hidden />
@@ -43,7 +45,8 @@ export function PainPointsSection() {
               </Reveal>
             );
           })}
-        </div>
+          </div>
+        </ScrollScale>
       </div>
     </section>
   );

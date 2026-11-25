@@ -1,16 +1,24 @@
 import {
   ACESFilmicToneMapping,
+  AdditiveBlending,
   Box3,
+  BufferAttribute,
+  BufferGeometry,
   DirectionalLight,
   ExtrudeGeometry,
   Group,
+  HemisphereLight,
   MathUtils,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   PMREMGenerator,
+  PointLight,
+  Points,
+  PointsMaterial,
   Scene,
   SRGBColorSpace,
+  TorusGeometry,
   Vector3,
   WebGLRenderer,
   type Texture,
@@ -21,23 +29,32 @@ import { extractBellShapes } from "./bell-shapes";
 
 const BODY_DEPTH = 18;
 const LETTER_DEPTH = 30;
-const SWAY_DEG = 12;
-const SCROLL_TURN_DEG = 30;
-const SCROLL_PULLBACK = 0.25;
+const SWAY_DEG = 14;
+
+export type BellSceneOptions = {
+  /** Chế độ nhẹ cho mobile: ít hạt hơn, DPR giới hạn 1.25, bỏ PMREM nặng. */
+  lite?: boolean;
+};
 
 /**
- * Cảnh three.js một vật thể: quả chuông PK vàng kim đùn từ logo gốc.
- * Lắc nhẹ quanh trục đứng, nghiêng theo con trỏ, xoay thêm và lùi xa khi cuộn qua Hero.
+ * Cảnh three.js toàn màn hình cho Hero:
+ * - Quả chuông PK vàng kim đùn khối làm tâm điểm
+ * - Hai vòng quỹ đạo kim loại mảnh xoay lệch pha
+ * - Trường hạt bụi vàng 3D có chiều sâu
+ * - Camera zoom-in rồi zoom-out mượt theo tiến độ cuộn (setScroll) và nghiêng theo con trỏ
  */
 export class BellScene {
   onContextLost?: () => void;
 
   private renderer: WebGLRenderer;
   private scene = new Scene();
-  private camera = new PerspectiveCamera(30, 1, 1, 10000);
+  private camera = new PerspectiveCamera(34, 1, 1, 10000);
   private pivot = new Group();
-  private envTexture: Texture;
-  private pmrem: PMREMGenerator;
+  private ringA: Mesh | null = null;
+  private ringB: Mesh | null = null;
+  private particles: Points | null = null;
+  private envTexture: Texture | null = null;
+  private pmrem: PMREMGenerator | null = null;
   private resizeObserver: ResizeObserver;
   private frame = 0;
   private running = false;
@@ -45,26 +62,52 @@ export class BellScene {
   private bellSize = new Vector3(1, 1, 1);
   private pointer = { x: 0, y: 0, tx: 0, ty: 0 };
   private scroll = 0;
+  private targetScroll = 0;
   private startTime = performance.now();
   private disposed = false;
+  private lite: boolean;
 
-  constructor(private canvas: HTMLCanvasElement, svgText: string) {
-    this.renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "low-power" });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  constructor(
+    private canvas: HTMLCanvasElement,
+    svgText: string,
+    options: BellSceneOptions = {},
+  ) {
+    this.lite = options.lite === true;
+    this.renderer = new WebGLRenderer({
+      canvas,
+      alpha: true,
+      antialias: !this.lite,
+      powerPreference: this.lite ? "low-power" : "high-performance",
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.lite ? 1.25 : 1.75));
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.15;
     this.renderer.setClearColor(0x000000, 0);
 
-    this.pmrem = new PMREMGenerator(this.renderer);
-    this.envTexture = this.pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environment = this.envTexture;
+    if (!this.lite) {
+      this.pmrem = new PMREMGenerator(this.renderer);
+      this.envTexture = this.pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      this.scene.environment = this.envTexture;
+    } else {
+      this.scene.add(new HemisphereLight(0xffe8b5, 0x18181b, 1.3));
+    }
 
-    const key = new DirectionalLight(0xfff1d0, 1.6);
-    key.position.set(-1, 1.2, 2);
+    const key = new DirectionalLight(0xfff1d0, this.lite ? 2.2 : 1.8);
+    key.position.set(-1.2, 1.4, 2.2);
     this.scene.add(key);
 
+    const rim = new DirectionalLight(0xe9be57, 1.1);
+    rim.position.set(1.6, -0.8, -1.4);
+    this.scene.add(rim);
+
+    const warmGlow = new PointLight(0xf2ce72, this.lite ? 1.2 : 1.8, 2800, 1.5);
+    warmGlow.position.set(0, 80, 420);
+    this.scene.add(warmGlow);
+
     this.buildBell(svgText);
+    this.buildOrbitalRings();
+    this.buildParticles();
     this.scene.add(this.pivot);
 
     canvas.addEventListener("webglcontextlost", this.handleContextLost);
@@ -81,7 +124,7 @@ export class BellScene {
 
   /** 0 ở đầu trang, 1 khi đã cuộn hết Hero. */
   setScroll(progress: number): void {
-    this.scroll = MathUtils.clamp(progress, 0, 1);
+    this.targetScroll = MathUtils.clamp(progress, 0, 1);
   }
 
   start(): void {
@@ -107,16 +150,20 @@ export class BellScene {
         (obj.material as MeshStandardMaterial).dispose();
       }
     });
-    this.envTexture.dispose();
-    this.pmrem.dispose();
+    if (this.particles) {
+      this.particles.geometry.dispose();
+      (this.particles.material as PointsMaterial).dispose();
+    }
+    this.envTexture?.dispose();
+    this.pmrem?.dispose();
     this.renderer.dispose();
   }
 
   private buildBell(svgText: string): void {
     const { svg, letterIds } = extractBellShapes(svgText);
     const data = new SVGLoader().parse(svg);
-    const bodyMaterial = new MeshStandardMaterial({ color: 0xe9be57, metalness: 0.95, roughness: 0.28 });
-    const letterMaterial = new MeshStandardMaterial({ color: 0xf2ce72, metalness: 0.9, roughness: 0.22 });
+    const bodyMaterial = new MeshStandardMaterial({ color: 0xe9be57, metalness: 0.92, roughness: 0.24 });
+    const letterMaterial = new MeshStandardMaterial({ color: 0xf8ecde, metalness: 0.85, roughness: 0.18 });
 
     const shapesGroup = new Group();
     for (const path of data.paths) {
@@ -127,13 +174,12 @@ export class BellScene {
         bevelEnabled: true,
         bevelThickness: 2,
         bevelSize: 1.2,
-        bevelSegments: 2,
-        curveSegments: 10,
+        bevelSegments: this.lite ? 1 : 2,
+        curveSegments: this.lite ? 6 : 10,
       });
       shapesGroup.add(new Mesh(geometry, isLetter ? letterMaterial : bodyMaterial));
     }
 
-    // SVG có trục Y hướng xuống: lật lại (three tự xử lý chiều mặt khi scale âm), rồi căn giữa
     shapesGroup.scale.y = -1;
     shapesGroup.updateMatrixWorld(true);
     const box = new Box3().setFromObject(shapesGroup);
@@ -144,10 +190,65 @@ export class BellScene {
     box.getSize(this.bellSize);
   }
 
-  /** Lùi camera vừa đủ để cả quả chuông nằm gọn trong khung (tính lại khi đổi tỷ lệ khung). */
+  private buildOrbitalRings(): void {
+    const radius = Math.max(this.bellSize.x, this.bellSize.y) * 0.72;
+    const ringMatA = new MeshStandardMaterial({
+      color: 0xe9be57,
+      metalness: 0.9,
+      roughness: 0.25,
+      transparent: true,
+      opacity: 0.36,
+    });
+    const ringA = new Mesh(new TorusGeometry(radius, 1.4, 12, this.lite ? 64 : 96), ringMatA);
+    ringA.rotation.set(Math.PI * 0.38, Math.PI * 0.14, 0);
+    this.ringA = ringA;
+    this.pivot.add(ringA);
+
+    if (!this.lite) {
+      const ringMatB = new MeshStandardMaterial({
+        color: 0xf8ecde,
+        metalness: 0.85,
+        roughness: 0.3,
+        transparent: true,
+        opacity: 0.2,
+      });
+      const ringB = new Mesh(new TorusGeometry(radius * 1.22, 1.0, 10, 96), ringMatB);
+      ringB.rotation.set(-Math.PI * 0.32, Math.PI * 0.28, 0);
+      this.ringB = ringB;
+      this.pivot.add(ringB);
+    }
+  }
+
+  private buildParticles(): void {
+    const count = this.lite ? 80 : 220;
+    const positions = new Float32Array(count * 3);
+    const spreadX = Math.max(this.bellSize.x, 400) * 3.2;
+    const spreadY = Math.max(this.bellSize.y, 400) * 2.4;
+    const spreadZ = 900;
+
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * spreadX;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * spreadY;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * spreadZ - 120;
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(positions, 3));
+    const material = new PointsMaterial({
+      color: 0xf2ce72,
+      size: this.lite ? 3.5 : 3.2,
+      transparent: true,
+      opacity: 0.55,
+      blending: AdditiveBlending,
+      depthWrite: false,
+    });
+    this.particles = new Points(geometry, material);
+    this.scene.add(this.particles);
+  }
+
   private fitCamera(): void {
     const fitHeight = Math.max(this.bellSize.y, this.bellSize.x / this.camera.aspect);
-    this.baseDistance = (fitHeight / 2 / Math.tan(MathUtils.degToRad(this.camera.fov / 2))) * 1.2;
+    this.baseDistance = (fitHeight / 2 / Math.tan(MathUtils.degToRad(this.camera.fov / 2))) * 1.35;
   }
 
   private resize(): void {
@@ -162,15 +263,37 @@ export class BellScene {
 
   private render(): void {
     const t = (performance.now() - this.startTime) / 1000;
-    this.pointer.x += (this.pointer.tx - this.pointer.x) * 0.06;
-    this.pointer.y += (this.pointer.ty - this.pointer.y) * 0.06;
+    this.pointer.x += (this.pointer.tx - this.pointer.x) * 0.07;
+    this.pointer.y += (this.pointer.ty - this.pointer.y) * 0.07;
+    this.scroll += (this.targetScroll - this.scroll) * 0.1;
+
+    // Giai đoạn 1 (0 -> 0.45): zoom-in vào chuông; Giai đoạn 2 (0.45 -> 1): zoom-out lùi sâu
+    const zoomPhase =
+      this.scroll < 0.45
+        ? 1 - 0.28 * (this.scroll / 0.45)
+        : 0.72 + 0.65 * ((this.scroll - 0.45) / 0.55);
 
     this.pivot.rotation.y =
-      MathUtils.degToRad(SWAY_DEG) * Math.sin(t * 0.6) +
-      this.pointer.x * 0.35 +
-      MathUtils.degToRad(SCROLL_TURN_DEG) * this.scroll;
-    this.pivot.rotation.x = this.pointer.y * 0.2;
-    this.camera.position.set(0, 0, this.baseDistance * (1 + SCROLL_PULLBACK * this.scroll));
+      MathUtils.degToRad(SWAY_DEG) * Math.sin(t * 0.65) +
+      this.pointer.x * 0.42 +
+      MathUtils.degToRad(58) * this.scroll;
+    this.pivot.rotation.x = this.pointer.y * 0.24 - MathUtils.degToRad(10) * this.scroll;
+    this.pivot.position.y = Math.sin(t * 1.1) * 8 - this.scroll * 35;
+
+    if (this.ringA) {
+      this.ringA.rotation.z = t * 0.22 + this.scroll * 1.2;
+    }
+    if (this.ringB) {
+      this.ringB.rotation.z = -t * 0.16 - this.scroll * 0.9;
+    }
+    if (this.particles) {
+      this.particles.rotation.y = t * 0.04 + this.pointer.x * 0.08 + this.scroll * 0.35;
+      this.particles.rotation.x = this.pointer.y * 0.05;
+    }
+
+    const camX = this.pointer.x * 45;
+    const camY = -this.pointer.y * 28 + this.scroll * 24;
+    this.camera.position.set(camX, camY, this.baseDistance * zoomPhase);
     this.camera.lookAt(0, 0, 0);
     this.renderer.render(this.scene, this.camera);
   }

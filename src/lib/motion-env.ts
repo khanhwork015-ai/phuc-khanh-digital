@@ -57,6 +57,14 @@ export function canUse3D(env: MotionEnv): boolean {
   return env.finePointer && env.width >= HEAVY_MOTION_MIN_WIDTH && env.webgl && !env.reducedMotion;
 }
 
+/**
+ * Chế độ 3D rút gọn cho mobile/tablet: chỉ cần WebGL và không bật giảm chuyển động.
+ * Dùng ít hạt hơn, DPR thấp hơn và không lắng nghe con trỏ chuột.
+ */
+export function canUseLite3D(env: Pick<MotionEnv, "reducedMotion" | "webgl">): boolean {
+  return env.webgl && !env.reducedMotion;
+}
+
 export function getLenisOptions(env: MotionEnv, touchEnabled: boolean): LenisOptions | null {
   if (env.reducedMotion) return null;
   if (!env.finePointer && !touchEnabled) return null;

@@ -4,18 +4,28 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { BellScene } from "@/components/three/bell-scene";
 import { assetPath } from "@/lib/asset-path";
-import { canUse3D, needsWebGLProbe, readMotionEnv } from "@/lib/motion-env";
+import { canUse3D, canUseLite3D, readMotionEnv } from "@/lib/motion-env";
 import { cn } from "@/lib/utils";
 
-/** Sự kiện báo cho nền lưới chấm Hero biết chuông 3D đang chạy (để nền chỉ giữ khung tĩnh). */
+/** Sự kiện báo cho nền lưới chấm Hero biết chuông 3D đang chạy (để nền nhường sân khấu). */
 export const BELL_3D_EVENT = "pkd:bell3d";
-/** Tương tác đầu tiên của người dùng mới khởi động 3D (không chen vào lúc trang đang tải). */
-const FIRST_INTERACTION_EVENTS = ["pointermove", "pointerdown", "wheel", "keydown", "touchstart", "scroll"] as const;
+
+function probeWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    return Boolean(gl);
+  } catch {
+    return false;
+  }
+}
 
 /**
- * Chuông PK ở Hero. Ảnh SVG tĩnh luôn có sẵn từ HTML; trên máy tính đủ điều kiện (canUse3D),
- * ở lần tương tác đầu tiên (rê chuột, cuộn, bấm phím) và khi trình duyệt rảnh, tải three.js và hiện chuông 3D chồng lên.
- * Mọi lỗi (tải chunk, fetch, WebGL, mất context) đều quay về ảnh tĩnh, không báo lỗi ra console.
+ * Chuông PK 3D ở Hero (kèm vòng quỹ đạo & trường hạt 3D):
+ * - Máy tính: chế độ đầy đủ (PMREM + 220 hạt + nghiêng theo chuột + zoom theo cuộn).
+ * - Mobile/tablet: chế độ lite (80 hạt + DPR <= 1.25 + không lắng nghe chuột) để vẫn mượt 60fps.
+ * - Reduce motion hoặc không có WebGL: giữ ảnh SVG tĩnh sạch sẽ.
  */
 export function HeroBell() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,13 +42,16 @@ export function HeroBell() {
     let timer = 0;
     let idle = 0;
     let resizeTimer = 0;
-    // Dò WebGL tốn kém: chỉ dò khi các điều kiện rẻ đã đạt, và chỉ dò một lần
     let webglKnown: boolean | null = null;
-    const allowed3D = () => {
+
+    const getMode = (): "full" | "lite" | "off" => {
       const env = readMotionEnv();
-      if (!needsWebGLProbe(env)) return false;
-      webglKnown ??= readMotionEnv({ probeWebGL: true }).webgl;
-      return canUse3D({ ...env, webgl: webglKnown });
+      if (env.reducedMotion) return "off";
+      webglKnown ??= probeWebGL();
+      const fullEnv = { ...env, webgl: webglKnown };
+      if (canUse3D(fullEnv)) return "full";
+      if (canUseLite3D(fullEnv)) return "lite";
+      return "off";
     };
 
     const announce = (active: boolean) => window.dispatchEvent(new CustomEvent(BELL_3D_EVENT, { detail: active }));
@@ -53,11 +66,15 @@ export function HeroBell() {
 
     const syncScroll = () => {
       if (!scene || !hero) return;
-      scene.setScroll(window.scrollY / Math.max(1, hero.offsetHeight));
+      const rect = hero.getBoundingClientRect();
+      const maxScroll = Math.max(1, hero.offsetHeight - window.innerHeight * 0.4);
+      const scrolled = Math.max(0, -rect.top);
+      scene.setScroll(scrolled / maxScroll);
     };
 
     const boot = async () => {
-      if (booting || scene || !allowed3D()) return;
+      const mode = getMode();
+      if (booting || scene || mode === "off") return;
       booting = true;
       try {
         const [{ BellScene }, svgText] = await Promise.all([
@@ -67,8 +84,8 @@ export function HeroBell() {
             return res.text();
           }),
         ]);
-        if (cancelled || !allowed3D()) return;
-        scene = new BellScene(canvas, svgText);
+        if (cancelled || getMode() === "off") return;
+        scene = new BellScene(canvas, svgText, { lite: mode === "lite" });
         scene.onContextLost = teardown;
         syncScroll();
         scene.start();
@@ -81,28 +98,15 @@ export function HeroBell() {
       }
     };
 
-    const onFirstInteraction = () => {
-      FIRST_INTERACTION_EVENTS.forEach((type) => window.removeEventListener(type, onFirstInteraction));
-      if (typeof window.requestIdleCallback === "function") {
-        idle = window.requestIdleCallback(() => void boot(), { timeout: 800 });
-      } else {
-        timer = window.setTimeout(() => void boot(), 100);
-      }
-    };
-    const schedule = () => {
-      // Máy không đủ điều kiện rẻ (điện thoại, màn nhỏ, giảm chuyển động) thì không cần nghe gì
-      if (!needsWebGLProbe(readMotionEnv())) return;
-      FIRST_INTERACTION_EVENTS.forEach((type) => window.addEventListener(type, onFirstInteraction, { passive: true }));
-    };
-
-    const onPointerMove = (e: PointerEvent) =>
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
       scene?.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
+    };
 
     const onResize = () => {
       window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
-        const allowed = allowed3D();
-        if (!allowed) teardown();
+        if (getMode() === "off") teardown();
         else if (!scene) void boot();
       }, 250);
     };
@@ -123,7 +127,13 @@ export function HeroBell() {
     window.addEventListener("scroll", syncScroll, { passive: true });
     window.addEventListener("resize", onResize);
     document.addEventListener("visibilitychange", onVisibility);
-    schedule();
+
+    // Khởi động ngay sau khi trình duyệt vẽ xong khung đầu tiên
+    if (typeof window.requestIdleCallback === "function") {
+      idle = window.requestIdleCallback(() => void boot(), { timeout: 250 });
+    } else {
+      timer = window.setTimeout(() => void boot(), 50);
+    }
 
     return () => {
       cancelled = true;
@@ -135,21 +145,23 @@ export function HeroBell() {
       window.removeEventListener("scroll", syncScroll);
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
-      FIRST_INTERACTION_EVENTS.forEach((type) => window.removeEventListener(type, onFirstInteraction));
       teardown();
     };
   }, []);
 
   return (
     <div className="relative h-full w-full">
-      <div className="absolute inset-[18%] rounded-full bg-accent/20 blur-3xl" />
+      <div className="absolute inset-[15%] rounded-full bg-accent/20 blur-3xl" />
       <Image
         src={assetPath("/brand/logo-mark.svg")}
         alt=""
         width={612}
         height={530}
         unoptimized
-        className={cn("relative h-full w-full object-contain transition-opacity duration-700", ready && "opacity-0")}
+        className={cn(
+          "relative h-full w-full object-contain opacity-45 transition-opacity duration-700 lg:opacity-60",
+          ready && "opacity-0 lg:opacity-0",
+        )}
       />
       <canvas
         ref={canvasRef}

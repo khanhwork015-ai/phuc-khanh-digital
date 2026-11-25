@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { MagneticCursor } from "@/components/motion/MagneticCursor";
 import { SmoothScrollProvider } from "@/components/motion/SmoothScrollProvider";
 import { siteConfig } from "@/data/site-config";
 import "./globals.css";
@@ -50,7 +51,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi" className={`${jakarta.variable} ${jetbrains.variable}`}>
       <body>
-        <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        <SmoothScrollProvider>
+          <MagneticCursor />
+          {children}
+        </SmoothScrollProvider>
       </body>
     </html>
   );

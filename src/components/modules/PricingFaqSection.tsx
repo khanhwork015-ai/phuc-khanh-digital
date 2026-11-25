@@ -4,6 +4,7 @@ import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useState } from "react";
 import { Reveal } from "@/components/motion/Reveal";
+import { ScrollScale } from "@/components/motion/ScrollScale";
 import { useSmoothScroll } from "@/components/motion/SmoothScrollProvider";
 import { TiltCard } from "@/components/modules/hero/TiltCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -34,7 +35,8 @@ export function PricingFaqSection() {
         />
 
         {/* Bảng gói 3 cột */}
-        <div className="mt-14 grid gap-5 lg:grid-cols-3">
+        <ScrollScale from={0.93} toExit={0.97} className="mt-14">
+          <div className="grid gap-5 lg:grid-cols-3">
           {PRICING_CONFIG.map((plan, idx) => {
             const card = (
             <Reveal
@@ -101,7 +103,8 @@ export function PricingFaqSection() {
               card
             );
           })}
-        </div>
+          </div>
+        </ScrollScale>
 
         <Reveal delay={0.12}>
           <p className="mt-6 text-[13.5px] text-fg-3">{pricingContent.note}</p>
