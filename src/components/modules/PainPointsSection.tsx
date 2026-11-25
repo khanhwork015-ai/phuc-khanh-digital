@@ -1,5 +1,4 @@
 import { CopyCheck, MessageSquareWarning, Timer, type LucideIcon } from "lucide-react";
-import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
 import { ScrollScale } from "@/components/motion/ScrollScale";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -28,21 +27,19 @@ export function PainPointsSection() {
                   delay={i * 0.08}
                   className="group relative flex flex-col border-line bg-surface/40 p-7 transition-colors duration-200 hover:bg-surface max-md:not-first:border-t md:not-first:border-l md:p-8"
                 >
-                  <Parallax distance={[-48, 8, 64][i] ?? 0} className="flex flex-1 flex-col">
-                <div className="flex items-center justify-between">
-                  <span className="flex size-10 items-center justify-center rounded-xl border border-line text-fg-2 transition-colors duration-200 group-hover:border-line-accent group-hover:text-accent">
-                    <Icon size={19} strokeWidth={1.5} aria-hidden />
-                  </span>
-                  <span className="font-mono text-[12px] text-fg-3">0{i + 1}</span>
-                </div>
-                <h3 className="mt-6 text-lg font-semibold tracking-[-0.015em] text-fg">{item.title}</h3>
-                <p className="mt-3 flex-1 text-[15px] leading-relaxed text-fg-2">{item.body}</p>
-                <p className="mt-6 inline-flex w-fit items-center gap-2 rounded-md border border-line px-2.5 py-1 font-mono text-[11.5px] text-fg-3">
-                  <span aria-hidden className="size-1.5 rounded-full bg-red-400/70" />
-                  {item.symptom}
-                </p>
-                </Parallax>
-              </Reveal>
+                  <div className="flex items-center justify-between">
+                    <span className="flex size-10 items-center justify-center rounded-xl border border-line text-fg-2 transition-colors duration-200 group-hover:border-line-accent group-hover:text-accent">
+                      <Icon size={19} strokeWidth={1.5} aria-hidden />
+                    </span>
+                    <span className="font-mono text-[12px] text-fg-3">0{i + 1}</span>
+                  </div>
+                  <h3 className="mt-6 text-lg font-semibold tracking-[-0.015em] text-fg">{item.title}</h3>
+                  <p className="mt-3 flex-1 text-[15px] leading-relaxed text-fg-2">{item.body}</p>
+                  <p className="mt-6 inline-flex w-fit items-center gap-2 rounded-md border border-line px-2.5 py-1 font-mono text-[11.5px] text-fg-3">
+                    <span aria-hidden className="size-1.5 rounded-full bg-red-400/70" />
+                    {item.symptom}
+                  </p>
+                </Reveal>
             );
           })}
           </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, MessageCircle, Phone, RotateCcw, Send } from "lucide-react";
-import { useEffect, useId, useState } from "react";
-import { useForm } from "react-hook-form";
+import { ArrowUpRight, Check, CheckCircle2, ChevronDown, MessageCircle, Phone, RotateCcw, Send } from "lucide-react";
+import { AnimatePresence, m } from "motion/react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PRICING_CONFIG } from "@/data/pricing";
@@ -13,6 +14,7 @@ import {
   type LeadFormValues,
   type LeadPlanValue,
 } from "@/lib/lead-fields";
+import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const nextSteps = [
@@ -32,6 +34,7 @@ export function LeadCaptureSection() {
 
   const {
     register,
+    control,
     handleSubmit,
     setValue,
     reset,
@@ -46,6 +49,32 @@ export function LeadCaptureSection() {
       website: "",
     },
   });
+
+  const selectedPlan = useWatch({ control, name: "plan" });
+  const [planOpen, setPlanOpen] = useState(false);
+  const planDropdownRef = useRef<HTMLDivElement>(null);
+  const planTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!planOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!planDropdownRef.current?.contains(e.target as Node)) {
+        setPlanOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setPlanOpen(false);
+        planTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [planOpen]);
 
   useEffect(() => {
     const onSelectPlan = (event: Event) => {
@@ -256,21 +285,97 @@ export function LeadCaptureSection() {
                   )}
                 </div>
 
-                <div>
-                  <label htmlFor={planId} className="block text-[13.5px] font-medium text-fg">
+                <div ref={planDropdownRef} className="relative">
+                  <label id={`${planId}-label`} htmlFor={planId} className="block text-[13.5px] font-medium text-fg">
                     Gói quan tâm
                   </label>
-                  <select
+                  <input type="hidden" {...register("plan")} />
+                  <button
+                    ref={planTriggerRef}
                     id={planId}
-                    className="mt-2 h-11 w-full rounded-xl border border-line bg-canvas px-3.5 text-[14.5px] text-fg focus:border-line-accent focus:outline-none"
-                    {...register("plan")}
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={planOpen}
+                    aria-labelledby={`${planId}-label ${planId}`}
+                    onClick={() => setPlanOpen((prev) => !prev)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        const idx = PRICING_CONFIG.findIndex((p) => p.id === selectedPlan);
+                        const delta = e.key === "ArrowDown" ? 1 : -1;
+                        const next = PRICING_CONFIG[(idx + delta + PRICING_CONFIG.length) % PRICING_CONFIG.length];
+                        if (next) setValue("plan", next.id, { shouldValidate: true, shouldDirty: true });
+                      }
+                    }}
+                    className={cn(
+                      "mt-2 flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-canvas px-3.5 text-left text-[14.5px] text-fg transition-colors duration-200 focus:outline-none",
+                      planOpen ? "border-line-accent" : "border-line hover:border-line-strong focus:border-line-accent",
+                    )}
                   >
-                    {PRICING_CONFIG.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="flex items-center gap-2.5 truncate">
+                      <span>{PRICING_CONFIG.find((p) => p.id === selectedPlan)?.name ?? "Chọn gói"}</span>
+                      {PRICING_CONFIG.find((p) => p.id === selectedPlan)?.badge && (
+                        <span className="rounded-md border border-line-accent bg-accent-muted px-1.5 py-0.5 text-[11px] font-medium text-accent">
+                          {PRICING_CONFIG.find((p) => p.id === selectedPlan)?.badge}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      strokeWidth={1.75}
+                      aria-hidden
+                      className={cn(
+                        "shrink-0 text-fg-3 transition-transform duration-200",
+                        planOpen && "rotate-180 text-accent",
+                      )}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {planOpen && (
+                      <m.ul
+                        role="listbox"
+                        aria-labelledby={`${planId}-label`}
+                        initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                        transition={{ duration: 0.16, ease: easeOutExpo }}
+                        className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-line-strong bg-elevated/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md"
+                      >
+                        {PRICING_CONFIG.map((plan) => {
+                          const active = plan.id === selectedPlan;
+                          return (
+                            <li
+                              key={plan.id}
+                              role="option"
+                              aria-selected={active}
+                              onClick={() => {
+                                setValue("plan", plan.id, { shouldValidate: true, shouldDirty: true });
+                                setPlanOpen(false);
+                                planTriggerRef.current?.focus();
+                              }}
+                              className={cn(
+                                "flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-colors duration-150",
+                                active
+                                  ? "bg-accent-muted text-ivory"
+                                  : "text-fg-2 hover:bg-white/[0.05] hover:text-fg",
+                              )}
+                            >
+                              <span className="flex items-center gap-2.5">
+                                <span className={cn("font-medium", active && "text-ivory")}>{plan.name}</span>
+                                {plan.badge && (
+                                  <span className="rounded-md border border-line-accent bg-accent-muted px-1.5 py-0.5 text-[11px] font-medium text-accent">
+                                    {plan.badge}
+                                  </span>
+                                )}
+                              </span>
+                              {active && <Check size={15} strokeWidth={2} className="shrink-0 text-accent" aria-hidden />}
+                            </li>
+                          );
+                        })}
+                      </m.ul>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {serverError && (

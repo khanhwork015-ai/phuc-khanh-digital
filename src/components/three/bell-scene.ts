@@ -248,8 +248,8 @@ export class BellScene {
 
   private fitCamera(): void {
     const fitHeight = Math.max(this.bellSize.y, this.bellSize.x / this.camera.aspect);
-    // Chừa dư biên 1.62x để chóp cánh cung và vòng quỹ đạo không bao giờ chạm mép canvas khi xoay/zoom
-    this.baseDistance = (fitHeight / 2 / Math.tan(MathUtils.degToRad(this.camera.fov / 2))) * 1.62;
+    // Chừa dư biên 2.35x để hai vòng quỹ đạo ngoài cùng không bị cắt ở mép trên/dưới khi xoay/zoom
+    this.baseDistance = (fitHeight / 2 / Math.tan(MathUtils.degToRad(this.camera.fov / 2))) * 2.35;
   }
 
   private resize(): void {

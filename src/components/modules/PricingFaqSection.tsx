@@ -46,8 +46,8 @@ export function PricingFaqSection() {
               className={cn(
                 "flex h-full flex-col rounded-2xl border p-7 transition-colors duration-200 md:p-8",
                 plan.featured
-                  ? "border-line-accent bg-surface"
-                  : "border-line bg-surface/40 hover:border-line-strong",
+                  ? "border-line-accent bg-surface hover:border-accent/60"
+                  : "border-line bg-surface/40 hover:border-line-accent/50 hover:bg-surface/80",
               )}
             >
               <div className="flex items-start justify-between gap-3">
@@ -95,17 +95,12 @@ export function PricingFaqSection() {
               </button>
             </Reveal>
             );
-            // Gói Khuyên dùng nghiêng nhẹ theo chuột (chỉ máy tính) + parallax lệch pha giữa 3 thẻ
-            const wrapped = plan.featured ? (
-              <TiltCard maxDeg={4} className="h-full [&>div]:h-full">
-                {card}
-              </TiltCard>
-            ) : (
-              card
-            );
+            // Cả 3 thẻ đều nghiêng nhẹ theo chuột khi hover + parallax lệch pha giữa 3 thẻ
             return (
               <Parallax key={plan.id} distance={[-28, 18, -28][idx] ?? 0} className="h-full">
-                {wrapped}
+                <TiltCard maxDeg={4} className="h-full [&>div]:h-full">
+                  {card}
+                </TiltCard>
               </Parallax>
             );
           })}
@@ -157,10 +152,11 @@ export function PricingFaqSection() {
                           id={`faq-panel-${item.id}`}
                           role="region"
                           aria-labelledby={`faq-btn-${item.id}`}
-                          initial={{ opacity: 0, y: -6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -4 }}
-                          transition={{ duration: 0.22, ease: easeOutExpo }}
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.28, ease: easeOutExpo }}
+                          className="overflow-hidden"
                         >
                           <p className="px-6 pb-5 text-[14.5px] leading-relaxed text-fg-2">{item.answer}</p>
                         </m.div>

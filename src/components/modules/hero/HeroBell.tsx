@@ -167,7 +167,7 @@ export function HeroBell() {
         ref={canvasRef}
         data-bell
         className={cn(
-          "pointer-events-none absolute -inset-6 h-[calc(100%+3rem)] w-[calc(100%+3rem)] opacity-0 transition-opacity duration-700",
+          "pointer-events-none absolute -inset-20 h-[calc(100%+10rem)] w-[calc(100%+10rem)] opacity-0 transition-opacity duration-700",
           ready && "opacity-100",
         )}
       />
