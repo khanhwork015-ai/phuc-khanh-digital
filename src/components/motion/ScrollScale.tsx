@@ -24,19 +24,35 @@ export function ScrollScale({
   rotateXFrom = 12,
   className,
 }: ScrollScaleProps) {
-  const ref = useRef<HTMLDivElement>(null);
   const still = useReducedMotion() === true;
   const heavy = useHeavyMotion();
+
+  if (still || !heavy) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <ScrollScaleTrack from={from} toExit={toExit} rotateXFrom={rotateXFrom} className={className}>
+      {children}
+    </ScrollScaleTrack>
+  );
+}
+
+function ScrollScaleTrack({
+  children,
+  from = 0.78,
+  toExit = 0.92,
+  rotateXFrom = 12,
+  className,
+}: ScrollScaleProps) {
+  const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const progress = useSpring(scrollYProgress, { stiffness: 115, damping: 26, mass: 0.4 });
 
-  const startScale = heavy ? from : Math.max(from, 0.88);
-  const endScale = heavy ? toExit : Math.max(toExit, 0.94);
-
-  const scale = useTransform(progress, [0, 0.36, 0.72, 1], still ? [1, 1, 1, 1] : [startScale, 1, 1, endScale]);
-  const y = useTransform(progress, [0, 0.36, 1], still ? [0, 0, 0] : heavy ? [48, 0, -24] : [24, 0, -10]);
-  const opacity = useTransform(progress, [0, 0.2, 0.86, 1], still ? [1, 1, 1, 1] : [0.3, 1, 1, 0.65]);
-  const rotateX = useTransform(progress, [0, 0.36], still || !heavy ? [0, 0] : [rotateXFrom, 0]);
+  const scale = useTransform(progress, [0, 0.36, 0.72, 1], [from, 1, 1, toExit]);
+  const y = useTransform(progress, [0, 0.36, 1], [48, 0, -24]);
+  const opacity = useTransform(progress, [0, 0.2, 0.86, 1], [0.3, 1, 1, 0.65]);
+  const rotateX = useTransform(progress, [0, 0.36], [rotateXFrom, 0]);
 
   return (
     <div className={cn("[perspective:1200px]", className)}>

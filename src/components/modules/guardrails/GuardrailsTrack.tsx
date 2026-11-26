@@ -4,7 +4,6 @@ import { FileCheck2, ShieldCheck, Sparkles, Stamp, type LucideIcon } from "lucid
 import { m, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { GuardrailItem, GuardrailKey } from "@/data/guardrails";
-import { HEAVY_MOTION_MIN_WIDTH } from "@/lib/motion-env";
 import { cn } from "@/lib/utils";
 
 const icons: Record<GuardrailKey, LucideIcon> = {
@@ -55,76 +54,12 @@ function GuardrailCard({ item, className }: { item: GuardrailItem; className?: s
 }
 
 /**
- * Desktop (>= 1024px): section ghim toàn màn hình, 4 thẻ bằng chiều cao nhau trượt ngang theo cuộn dọc.
- * Mobile/Tablet (< 1024px): carousel vuốt ngang snap-center mượt 60fps kèm bộ đếm & thanh tiến trình.
+ * Dùng chung cho mọi kích thước màn hình:
+ * Section ghim toàn màn hình, cuộn dọc sẽ tự động trượt ngang các thẻ cho tới thẻ cuối cùng
+ * rồi mới tiếp tục cuộn dọc xuống bên dưới — không dùng overflow-x để tránh xung đột cuộn ngang/dọc.
  */
 export function GuardrailsTrack({ items, header }: { items: GuardrailItem[]; header: ReactNode }) {
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const update = () => setIsDesktop(window.innerWidth >= HEAVY_MOTION_MIN_WIDTH);
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  if (!isDesktop) {
-    return <MobileSnapTrack items={items} header={header} />;
-  }
   return <PinnedTrack items={items} header={header} />;
-}
-
-function MobileSnapTrack({ items, header }: { items: GuardrailItem[]; header: ReactNode }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
-  const [ratio, setRatio] = useState(1 / items.length);
-
-  const onScroll = () => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const max = Math.max(1, el.scrollWidth - el.clientWidth);
-    const p = Math.min(1, Math.max(0, el.scrollLeft / max));
-    setActive(Math.min(items.length - 1, Math.round(p * (items.length - 1))));
-    setRatio(1 / items.length + p * (1 - 1 / items.length));
-  };
-
-  return (
-    <div className="py-20 md:py-28">
-      <div className="mx-auto flex max-w-7xl items-end justify-between gap-6 px-5 md:px-8">
-        {header}
-        <p className="shrink-0 pb-1 font-mono text-[12.5px] text-fg-3" aria-live="polite">
-          <span className="text-accent">{String(active + 1).padStart(2, "0")}</span> / {String(items.length).padStart(2, "0")}
-        </p>
-      </div>
-
-      <div
-        ref={scrollerRef}
-        onScroll={onScroll}
-        className="mt-10 flex items-stretch snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8"
-      >
-        {items.map((item, idx) => (
-          <GuardrailCard
-            key={item.key}
-            item={item}
-            className={cn(
-              "w-[84vw] max-w-[380px] shrink-0 snap-center",
-              idx === active && "border-line-accent bg-surface",
-            )}
-          />
-        ))}
-      </div>
-
-      <div className="mx-auto mt-3 flex max-w-7xl items-center gap-4 px-5 md:px-8">
-        <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-white/[0.08]">
-          <div
-            className="h-full origin-left bg-accent transition-transform duration-150 ease-out"
-            style={{ transform: `scaleX(${ratio})` }}
-          />
-        </div>
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-3">Vuốt ngang</span>
-      </div>
-    </div>
-  );
 }
 
 function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactNode }) {
@@ -162,10 +97,10 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
 
   return (
     <div ref={sectionRef} className="relative" style={{ height: height ?? "300vh" }}>
-      <div className="sticky top-0 flex h-screen flex-col justify-center overflow-hidden py-16">
-        <div className="mx-auto flex w-full max-w-7xl items-end justify-between gap-10 px-8">
+      <div className="sticky top-0 flex h-[100svh] flex-col justify-center overflow-hidden pb-6 pt-20 md:h-screen md:py-16">
+        <div className="mx-auto flex w-full max-w-7xl items-end justify-between gap-4 px-5 md:gap-10 md:px-8">
           {header}
-          <p className="shrink-0 pb-2 font-mono text-[13px] text-fg-3" aria-live="polite">
+          <p className="shrink-0 pb-1 font-mono text-[12.5px] text-fg-3 md:pb-2 md:text-[13px]" aria-live="polite">
             <span className="text-accent">{String(active + 1).padStart(2, "0")}</span> / {String(items.length).padStart(2, "0")}
           </p>
         </div>
@@ -173,14 +108,14 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
         <m.div
           ref={trackRef}
           style={{ x }}
-          className="mt-12 flex w-max items-stretch gap-6 pl-[max(32px,calc((100vw-80rem)/2+32px))] pr-[max(32px,calc((100vw-80rem)/2+32px))]"
+          className="mt-6 flex w-max items-stretch gap-4 pl-5 pr-5 md:mt-12 md:gap-6 md:pl-[max(32px,calc((100vw-80rem)/2+32px))] md:pr-[max(32px,calc((100vw-80rem)/2+32px))]"
         >
           {items.map((item, idx) => (
             <GuardrailCard
               key={item.key}
               item={item}
               className={cn(
-                "w-[min(560px,42vw)] shrink-0 will-change-transform",
+                "w-[84vw] max-w-[380px] shrink-0 will-change-transform lg:w-[min(560px,42vw)] lg:max-w-none",
                 idx === active
                   ? "border-line-accent bg-surface shadow-[0_0_50px_-18px_rgba(233,190,87,0.3)]"
                   : "opacity-80",
@@ -189,7 +124,7 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
           ))}
         </m.div>
 
-        <div className="mx-auto mt-8 w-full max-w-7xl px-8">
+        <div className="mx-auto mt-5 w-full max-w-7xl px-5 md:mt-8 md:px-8">
           <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/[0.07]">
             <m.div style={{ scaleX: smoothProgress }} className="h-full origin-left bg-accent" />
           </div>

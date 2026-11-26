@@ -5,8 +5,8 @@ import type { LenisOptions } from "lenis";
  * File thuần, không import alias "@/" để chạy được bằng `node --test`.
  */
 
-/** Bật cuộn mượt (Lenis syncTouch) trên màn cảm ứng. Đặt false để tắt bằng một dòng. */
-export const SMOOTH_SCROLL_TOUCH = true;
+/** Bật cuộn mượt (Lenis syncTouch) trên màn cảm ứng. Đặt false để dùng cuộn gốc mượt trên mobile/tablet. */
+export const SMOOTH_SCROLL_TOUCH = false;
 export const LENIS_DESKTOP_LERP = 0.055;
 export const LENIS_TOUCH_LERP = 0.075;
 export const HEAVY_MOTION_MIN_WIDTH = 1024;

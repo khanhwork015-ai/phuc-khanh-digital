@@ -85,15 +85,16 @@ export class BellScene {
     this.renderer.toneMappingExposure = 1.15;
     this.renderer.setClearColor(0x000000, 0);
 
-    if (!this.lite) {
-      this.pmrem = new PMREMGenerator(this.renderer);
-      this.envTexture = this.pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-      this.scene.environment = this.envTexture;
-    } else {
-      this.scene.add(new HemisphereLight(0xffe8b5, 0x18181b, 1.3));
+    // Dùng chung RoomEnvironment HDR trên mọi thiết bị (chỉ tạo 1 lần lúc khởi tạo) để chuông mobile sáng như desktop
+    this.pmrem = new PMREMGenerator(this.renderer);
+    this.envTexture = this.pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environment = this.envTexture;
+
+    if (this.lite) {
+      this.scene.add(new HemisphereLight(0xfff4d6, 0x3a2a14, 1.1));
     }
 
-    const key = new DirectionalLight(0xfff1d0, this.lite ? 2.2 : 1.8);
+    const key = new DirectionalLight(0xfff1d0, 1.8);
     key.position.set(-1.2, 1.4, 2.2);
     this.scene.add(key);
 
@@ -101,7 +102,7 @@ export class BellScene {
     rim.position.set(1.6, -0.8, -1.4);
     this.scene.add(rim);
 
-    const warmGlow = new PointLight(0xf2ce72, this.lite ? 1.2 : 1.8, 2800, 1.5);
+    const warmGlow = new PointLight(0xf2ce72, 1.8, 2800, 1.5);
     warmGlow.position.set(0, 80, 420);
     this.scene.add(warmGlow);
 
@@ -162,8 +163,20 @@ export class BellScene {
   private buildBell(svgText: string): void {
     const { svg, letterIds } = extractBellShapes(svgText);
     const data = new SVGLoader().parse(svg);
-    const bodyMaterial = new MeshStandardMaterial({ color: 0xe9be57, metalness: 0.92, roughness: 0.24 });
-    const letterMaterial = new MeshStandardMaterial({ color: 0xf8ecde, metalness: 0.85, roughness: 0.18 });
+    const bodyMaterial = new MeshStandardMaterial({
+      color: 0xe9be57,
+      metalness: this.lite ? 0.5 : 0.92,
+      roughness: this.lite ? 0.28 : 0.24,
+      emissive: this.lite ? 0x3b2c0a : 0x000000,
+      emissiveIntensity: this.lite ? 0.4 : 0,
+    });
+    const letterMaterial = new MeshStandardMaterial({
+      color: 0xf8ecde,
+      metalness: this.lite ? 0.35 : 0.85,
+      roughness: this.lite ? 0.22 : 0.18,
+      emissive: this.lite ? 0x3d372e : 0x000000,
+      emissiveIntensity: this.lite ? 0.4 : 0,
+    });
 
     const shapesGroup = new Group();
     for (const path of data.paths) {
