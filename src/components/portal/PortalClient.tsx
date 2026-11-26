@@ -247,22 +247,6 @@ export function PortalClient({ username }: { username: string }) {
 
             {activeTab === "content" ? (
               <div className="space-y-5">
-                {contentFilter === "all" && pendingItems.length > 0 && (
-                  <section className="space-y-3 rounded-2xl border border-line-accent bg-accent-muted/30 p-4 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-sm font-semibold text-accent">
-                        Bài đang chờ bạn duyệt ({pendingItems.length})
-                      </h2>
-                      <span className="text-xs text-fg-3">Ưu tiên xử lý trước giờ đăng</span>
-                    </div>
-                    <div className="space-y-3">
-                      {pendingItems.map((item) => (
-                        <PortalContentCard key={item.id} item={item} onSelect={() => setSelectedId(item.id)} />
-                      ))}
-                    </div>
-                  </section>
-                )}
-
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     { value: "pending" as const, label: `Chờ duyệt (${counts.pending})` },
@@ -285,6 +269,22 @@ export function PortalClient({ username }: { username: string }) {
                     </button>
                   ))}
                 </div>
+
+                {contentFilter === "all" && pendingItems.length > 0 && (
+                  <section className="space-y-3 rounded-2xl border border-line-accent bg-accent-muted/30 p-4 sm:p-5">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-accent">
+                        Bài đang chờ bạn duyệt ({pendingItems.length})
+                      </h2>
+                      <span className="text-xs text-fg-3">Ưu tiên xử lý trước giờ đăng</span>
+                    </div>
+                    <div className="space-y-3">
+                      {pendingItems.map((item) => (
+                        <PortalContentCard key={item.id} item={item} onSelect={() => setSelectedId(item.id)} />
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 {filteredItems.length === 0 ? (
                   <div className="rounded-2xl border border-line bg-surface/60 p-8 text-center text-sm text-fg-3">
