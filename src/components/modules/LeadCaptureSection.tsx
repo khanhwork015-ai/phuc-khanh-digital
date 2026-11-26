@@ -146,7 +146,6 @@ export function LeadCaptureSection() {
             >
               <MessageCircle size={16} strokeWidth={1.5} className="text-accent" aria-hidden />
               Nhắn Zalo ngay
-              <ArrowUpRight size={14} strokeWidth={1.5} className="text-fg-3" aria-hidden />
             </a>
             <a
               href={contactConfig.phoneHref}

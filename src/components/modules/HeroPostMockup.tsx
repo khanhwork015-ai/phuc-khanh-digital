@@ -141,7 +141,7 @@ export function HeroPostMockup() {
                     alt={post.photoAlt}
                     fill
                     sizes="(max-width: 1024px) 100vw, 520px"
-                    className="object-cover"
+                    className="object-contain"
                     priority
                   />
                 </m.div>
