@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { formatPostTime } from "@/components/content/FacebookPostPreview";
 import { PostReviewModal, type ReviewAction } from "@/components/content/PostReviewModal";
+import { BrandKitSummary } from "@/components/ui/BrandKitSummary";
 import { ColorSwatches } from "@/components/ui/ColorSwatches";
 import { Logo } from "@/components/ui/Logo";
 import { leadPlanLabels, type LeadPlanValue } from "@/lib/lead-fields";
@@ -27,7 +28,15 @@ type PortalOverview = {
     title: string;
     assetType: string;
     fileUrl: string | null;
-    metadata?: { content?: string | null; relativePath?: string; colors?: string[] } | null;
+    metadata?: {
+      content?: string | null;
+      relativePath?: string;
+      colors?: string[];
+      hotline?: string | null;
+      address?: string | null;
+      tone?: string | null;
+      style?: string | null;
+    } | null;
     updatedAt: string;
   }>;
   contentItems: Array<{
@@ -244,7 +253,7 @@ export function PortalClient({ username }: { username: string }) {
                   />
                 )}
                 <Palette size={14} className="relative z-10" />
-                <span className="relative z-10">Bộ nhận diện thương hiệu</span>
+                <span className="relative z-10">Brand Kit</span>
               </button>
             </div>
 
@@ -304,13 +313,23 @@ export function PortalClient({ username }: { username: string }) {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {data.brandAssets.length === 0 ? (
-                  <div className="rounded-2xl border border-line bg-surface/60 p-8 text-center text-sm text-fg-3 sm:col-span-2">
-                    Bộ nhận diện thương hiệu đang được Javis hoàn thiện và sẽ hiển thị tại đây.
-                  </div>
-                ) : (
-                  data.brandAssets.map((asset) => (
+              <div className="space-y-5">
+                <BrandKitSummary
+                  brandName={data.customer.businessName}
+                  logoUrl={
+                    data.brandAssets.find((a) => a.assetType === "image" && a.fileUrl)?.fileUrl ??
+                    data.contentItems.find((i) => i.logoUrl)?.logoUrl ??
+                    null
+                  }
+                  hotline={data.brandAssets.find((a) => a.metadata?.hotline)?.metadata?.hotline ?? null}
+                  address={data.brandAssets.find((a) => a.metadata?.address)?.metadata?.address ?? null}
+                  tone={data.brandAssets.find((a) => a.metadata?.tone)?.metadata?.tone ?? null}
+                  style={data.brandAssets.find((a) => a.metadata?.style)?.metadata?.style ?? null}
+                  colors={Array.from(new Set(data.brandAssets.flatMap((a) => a.metadata?.colors ?? [])))}
+                />
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {data.brandAssets.map((asset) => (
                     <div key={asset.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-surface/80 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
@@ -358,8 +377,8 @@ export function PortalClient({ username }: { username: string }) {
                         <ColorSwatches colors={asset.metadata.colors} />
                       )}
                     </div>
-                  ))
-                )}
+                  ))}
+                </div>
               </div>
             )}
           </div>

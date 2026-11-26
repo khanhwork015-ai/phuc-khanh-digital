@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Tổng quan", icon: BarChart3, exact: true },
   { href: "/dashboard/content", label: "Duyệt bài", icon: FileCheck2, exact: false },
-  { href: "/dashboard/brand-kit", label: "Nhận diện", icon: Palette, exact: false },
+  { href: "/dashboard/brand-kit", label: "Brand Kit", icon: Palette, exact: false },
   { href: "/dashboard/fanpages", label: "Fanpages", icon: Globe, exact: false },
   { href: "/dashboard/leads", label: "Lead", icon: Inbox, exact: false },
   { href: "/dashboard/customers", label: "Khách hàng", icon: Users, exact: false },

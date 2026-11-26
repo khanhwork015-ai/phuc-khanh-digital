@@ -12,6 +12,10 @@ const createBrandAssetSchema = z.object({
   fileUrl: z.string().trim().max(500).optional().or(z.literal("")),
   content: z.string().trim().max(8000).optional().or(z.literal("")),
   colorsText: z.string().trim().max(500).optional().or(z.literal("")),
+  hotline: z.string().trim().max(100).optional().or(z.literal("")),
+  address: z.string().trim().max(300).optional().or(z.literal("")),
+  tone: z.string().trim().max(300).optional().or(z.literal("")),
+  style: z.string().trim().max(300).optional().or(z.literal("")),
 });
 
 export async function GET() {
@@ -90,6 +94,10 @@ export async function POST(req: Request) {
     source: "manual",
     content: parsed.data.content || null,
     colors,
+    hotline: parsed.data.hotline || null,
+    address: parsed.data.address || null,
+    tone: parsed.data.tone || null,
+    style: parsed.data.style || null,
   });
 
   db.prepare(
