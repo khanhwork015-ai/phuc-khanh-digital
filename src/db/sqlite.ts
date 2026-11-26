@@ -35,6 +35,7 @@ function initSchema(db: DatabaseSync) {
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      pin_hash TEXT,
       role TEXT NOT NULL DEFAULT 'CUSTOMER',
       is_active INTEGER NOT NULL DEFAULT 1,
       customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL,
@@ -90,6 +91,11 @@ function initSchema(db: DatabaseSync) {
       updated_at TEXT NOT NULL
     );
   `);
+
+  const userCols = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
+  if (!userCols.some((c) => c.name === "pin_hash")) {
+    db.exec("ALTER TABLE users ADD COLUMN pin_hash TEXT;");
+  }
 
   const adminUsername = process.env.SEED_ADMIN_USERNAME?.trim();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;

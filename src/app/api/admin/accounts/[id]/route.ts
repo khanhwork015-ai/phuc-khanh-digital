@@ -32,8 +32,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const db = getSqliteDb();
-  const current = db.prepare("SELECT id, is_active, password_hash FROM users WHERE id = ?").get(id) as
-    | { id: string; is_active: number; password_hash: string }
+  const current = db.prepare("SELECT id, is_active, password_hash, pin_hash FROM users WHERE id = ?").get(id) as
+    | { id: string; is_active: number; password_hash: string; pin_hash: string | null }
     | undefined;
 
   if (!current) {
@@ -51,11 +51,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const nextActive = typeof parsed.data.isActive === "boolean" ? (parsed.data.isActive ? 1 : 0) : current.is_active;
   const nextHash = parsed.data.newPassword ? hashPassword(parsed.data.newPassword) : current.password_hash;
+  const nextPinHash = parsed.data.resetPin ? null : current.pin_hash;
   const now = new Date().toISOString();
 
-  db.prepare("UPDATE users SET is_active = ?, password_hash = ?, updated_at = ? WHERE id = ?").run(
+  db.prepare("UPDATE users SET is_active = ?, password_hash = ?, pin_hash = ?, updated_at = ? WHERE id = ?").run(
     nextActive,
     nextHash,
+    nextPinHash,
     now,
     id,
   );
@@ -66,7 +68,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   return NextResponse.json({
     ok: true,
-    account: { id, isActive: nextActive === 1 },
+    account: { id, isActive: nextActive === 1, hasPin: Boolean(nextPinHash) },
   });
 }
 

@@ -14,6 +14,7 @@ export type SessionUser = {
   username: string;
   role: UserRole;
   customerId: string | null;
+  hasPin: boolean;
 };
 
 export function createSession(userId: string): { token: string; expiresAt: Date } {
@@ -50,7 +51,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const row = db
     .prepare(
-      `SELECT u.id, u.username, u.role, u.is_active, u.customer_id
+      `SELECT u.id, u.username, u.role, u.is_active, u.customer_id, u.pin_hash
        FROM sessions s
        INNER JOIN users u ON s.user_id = u.id
        WHERE s.id = ? AND s.expires_at > ?
@@ -63,6 +64,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         role: UserRole;
         is_active: number;
         customer_id: string | null;
+        pin_hash: string | null;
       }
     | undefined;
 
@@ -73,6 +75,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     username: row.username,
     role: row.role,
     customerId: row.customer_id,
+    hasPin: Boolean(row.pin_hash),
   };
 }
 

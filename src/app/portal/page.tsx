@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { PinGateOverlay } from "@/components/auth/PinGateOverlay";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { getSessionUser } from "@/lib/auth";
 import { isDashboardRole } from "@/lib/permissions";
@@ -18,5 +19,9 @@ export default async function PortalPage() {
     redirect("/dashboard");
   }
 
-  return <PortalClient username={user.username} />;
+  return (
+    <PinGateOverlay initialHasPin={user.hasPin} username={user.username} portalLabel="Cổng duyệt bài khách hàng">
+      <PortalClient username={user.username} />
+    </PinGateOverlay>
+  );
 }

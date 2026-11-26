@@ -36,6 +36,7 @@ export const createAccountSchema = z
 export const updateAccountSchema = z
   .object({
     isActive: z.boolean().optional(),
+    resetPin: z.boolean().optional(),
     currentPassword: z.string().min(1, "Vui lòng nhập mật khẩu hiện tại.").optional(),
     newPassword: z
       .string()
@@ -47,3 +48,8 @@ export const updateAccountSchema = z
     message: "Vui lòng nhập mật khẩu hiện tại để xác nhận đổi mật khẩu.",
     path: ["currentPassword"],
   });
+
+export const pinActionSchema = z.object({
+  pin: z.string().regex(/^\d{4}$/, "Mã PIN phải gồm đúng 4 chữ số."),
+  confirmPin: z.string().regex(/^\d{4}$/, "Mã PIN xác nhận phải gồm đúng 4 chữ số.").optional(),
+});

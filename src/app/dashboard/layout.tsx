@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { PinGateOverlay } from "@/components/auth/PinGateOverlay";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { getSessionUser } from "@/lib/auth";
 import { isDashboardRole } from "@/lib/permissions";
@@ -19,8 +20,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <DashboardShell username={user.username} role={user.role}>
-      {children}
-    </DashboardShell>
+    <PinGateOverlay initialHasPin={user.hasPin} username={user.username} portalLabel="Bảng điều khiển quản trị">
+      <DashboardShell username={user.username} role={user.role}>
+        {children}
+      </DashboardShell>
+    </PinGateOverlay>
   );
 }

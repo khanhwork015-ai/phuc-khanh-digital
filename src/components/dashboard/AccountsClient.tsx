@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound, Lock, Plus, Shield, Trash2, Unlock } from "lucide-react";
+import { KeyRound, Lock, Plus, RotateCcw, Shield, Trash2, Unlock } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -14,6 +14,7 @@ type AccountRow = {
   username: string;
   role: UserRole;
   isActive: boolean;
+  hasPin?: boolean;
   customerId: string | null;
   customerName: string | null;
   customerCode: string | null;
@@ -205,6 +206,31 @@ export function AccountsClient({
     });
   }
 
+  function requestResetPin(acc: AccountRow) {
+    setConfirmState({
+      open: true,
+      title: `Đặt lại mã PIN cho "${acc.username}"`,
+      description: "Mã PIN 4 số hiện tại sẽ bị xóa. Người dùng sẽ được yêu cầu tạo mã PIN mới ở lần truy cập tiếp theo.",
+      confirmLabel: "Đặt lại PIN",
+      variant: "default",
+      errorMessage: null,
+      action: async () => {
+        const res = await fetch(`/api/admin/accounts/${acc.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resetPin: true }),
+        });
+        const data = (await res.json()) as { ok?: boolean; message?: string };
+        if (!res.ok || !data.ok) {
+          setConfirmState((prev) => (prev ? { ...prev, errorMessage: data.message ?? "Đặt lại PIN thất bại." } : null));
+          return;
+        }
+        setAccounts((prev) => prev.map((a) => (a.id === acc.id ? { ...a, hasPin: false } : a)));
+        setConfirmState(null);
+      },
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -259,6 +285,15 @@ export function AccountsClient({
                   >
                     {acc.isActive ? "Đang hoạt động" : "Đã khóa"}
                   </span>
+                  <span
+                    className={
+                      acc.hasPin
+                        ? "rounded-lg border border-line bg-canvas px-2 py-0.5 text-[11px] text-fg-2"
+                        : "rounded-lg border border-line bg-canvas px-2 py-0.5 text-[11px] text-fg-3"
+                    }
+                  >
+                    {acc.hasPin ? "Đã đặt PIN" : "Chưa đặt PIN"}
+                  </span>
                 </div>
                 <p className="text-xs text-fg-3">
                   {acc.customerName
@@ -269,6 +304,16 @@ export function AccountsClient({
 
               {canEdit && (
                 <div className="flex flex-wrap items-center gap-2">
+                  {acc.hasPin && (
+                    <button
+                      type="button"
+                      onClick={() => requestResetPin(acc)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg-2 hover:border-line-strong hover:text-fg"
+                    >
+                      <RotateCcw size={13} />
+                      <span>Đặt lại PIN</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {

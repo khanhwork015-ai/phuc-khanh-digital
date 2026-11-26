@@ -11,7 +11,7 @@ export async function GET() {
   const db = getSqliteDb();
   const rows = db
     .prepare(
-      `SELECT u.id, u.username, u.role, u.is_active AS isActiveRaw, u.customer_id AS customerId,
+      `SELECT u.id, u.username, u.role, u.is_active AS isActiveRaw, u.pin_hash AS pinHashRaw, u.customer_id AS customerId,
               c.business_name AS customerName, c.code AS customerCode, u.last_login_at AS lastLoginAt
        FROM users u
        LEFT JOIN customers c ON u.customer_id = c.id
@@ -22,6 +22,7 @@ export async function GET() {
     username: string;
     role: string;
     isActiveRaw: number;
+    pinHashRaw: string | null;
     customerId: string | null;
     customerName: string | null;
     customerCode: string | null;
@@ -29,8 +30,15 @@ export async function GET() {
   }>;
 
   const accounts = rows.map((r) => ({
-    ...r,
+    id: r.id,
+    username: r.username,
+    role: r.role,
     isActive: r.isActiveRaw === 1,
+    hasPin: Boolean(r.pinHashRaw),
+    customerId: r.customerId,
+    customerName: r.customerName,
+    customerCode: r.customerCode,
+    lastLoginAt: r.lastLoginAt,
   }));
 
   return NextResponse.json({ ok: true, accounts });
