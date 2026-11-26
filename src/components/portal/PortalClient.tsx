@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { formatPostTime } from "@/components/content/FacebookPostPreview";
 import { PostReviewModal, type ReviewAction } from "@/components/content/PostReviewModal";
+import { ColorSwatches } from "@/components/ui/ColorSwatches";
 import { Logo } from "@/components/ui/Logo";
 import { leadPlanLabels, type LeadPlanValue } from "@/lib/lead-fields";
 import { easeOutExpo } from "@/lib/theme";
@@ -26,7 +27,7 @@ type PortalOverview = {
     title: string;
     assetType: string;
     fileUrl: string | null;
-    metadata?: { content?: string | null; relativePath?: string } | null;
+    metadata?: { content?: string | null; relativePath?: string; colors?: string[] } | null;
     updatedAt: string;
   }>;
   contentItems: Array<{
@@ -310,47 +311,52 @@ export function PortalClient({ username }: { username: string }) {
                   </div>
                 ) : (
                   data.brandAssets.map((asset) => (
-                    <div key={asset.id} className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface/80 p-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        {asset.assetType === "image" && asset.fileUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={asset.fileUrl}
-                            alt={asset.title}
-                            className="size-10 shrink-0 rounded-xl border border-line bg-white object-cover"
-                          />
-                        ) : (
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                            <FileText size={18} />
+                    <div key={asset.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-surface/80 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {asset.assetType === "image" && asset.fileUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={asset.fileUrl}
+                              alt={asset.title}
+                              className="size-10 shrink-0 rounded-xl border border-line bg-white object-cover"
+                            />
+                          ) : (
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                              <FileText size={18} />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-fg">{asset.title}</p>
+                            <p className="font-mono text-[11px] uppercase text-fg-3">{asset.assetType}</p>
                           </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-fg">{asset.title}</p>
-                          <p className="font-mono text-[11px] uppercase text-fg-3">{asset.assetType}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {asset.metadata?.content && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewBrand(asset)}
+                              className="inline-flex h-9 items-center rounded-xl border border-line bg-canvas px-3 text-xs font-medium text-fg hover:border-line-accent hover:text-accent"
+                            >
+                              Xem
+                            </button>
+                          )}
+                          {asset.fileUrl && (
+                            <a
+                              href={asset.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-9 items-center gap-1 rounded-xl border border-line px-3 text-xs font-medium text-fg-2 hover:text-fg"
+                            >
+                              <span>Mở</span>
+                              <ExternalLink size={13} />
+                            </a>
+                          )}
                         </div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {asset.metadata?.content && (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewBrand(asset)}
-                            className="inline-flex h-9 items-center rounded-xl border border-line bg-canvas px-3 text-xs font-medium text-fg hover:border-line-accent hover:text-accent"
-                          >
-                            Xem
-                          </button>
-                        )}
-                        {asset.fileUrl && (
-                          <a
-                            href={asset.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex h-9 items-center gap-1 rounded-xl border border-line px-3 text-xs font-medium text-fg-2 hover:text-fg"
-                          >
-                            <span>Mở</span>
-                            <ExternalLink size={13} />
-                          </a>
-                        )}
-                      </div>
+                      {asset.metadata?.colors && asset.metadata.colors.length > 0 && (
+                        <ColorSwatches colors={asset.metadata.colors} />
+                      )}
                     </div>
                   ))
                 )}

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSqliteDb } from "@/db/sqlite";
 import { brandAssetTypes } from "@/db/types";
 import { requireCustomerManageApi, requireDashboardReadApi } from "@/lib/api-auth";
-import { syncFromJavisLocalDir } from "@/lib/javis-fs";
+import { extractHexColors, syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 const createBrandAssetSchema = z.object({
   customerId: z.string().uuid("Khách hàng không hợp lệ."),
@@ -11,6 +11,7 @@ const createBrandAssetSchema = z.object({
   assetType: z.enum(brandAssetTypes).default("guideline"),
   fileUrl: z.string().trim().max(500).optional().or(z.literal("")),
   content: z.string().trim().max(8000).optional().or(z.literal("")),
+  colorsText: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
 export async function GET() {
@@ -84,9 +85,11 @@ export async function POST(req: Request) {
 
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
+  const colors = extractHexColors(`${parsed.data.colorsText ?? ""} ${parsed.data.content ?? ""}`);
   const metadataJson = JSON.stringify({
     source: "manual",
     content: parsed.data.content || null,
+    colors,
   });
 
   db.prepare(

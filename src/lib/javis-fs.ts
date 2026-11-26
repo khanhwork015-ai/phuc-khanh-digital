@@ -103,8 +103,12 @@ export async function syncFromJavisLocalDir(): Promise<{
     console.error("[javis-fs] list posts failed:", err);
     return { enabled: true, customersSynced, contentSynced, error: "Không đọc được danh sách bài từ Javis." };
   }
+  const logoBySlug = new Map<string, string>();
   const seen = new Set<string>();
   for (const post of posts) {
+    if (post.fanpage_logo && !logoBySlug.has(post.fanpage_slug)) {
+      logoBySlug.set(post.fanpage_slug, post.fanpage_logo);
+    }
     const status = mapBridgeStatus(post.status);
     const customerId = slugToCustomerId.get(post.fanpage_slug);
     if (!status || !customerId) continue;
@@ -155,21 +159,53 @@ export async function syncFromJavisLocalDir(): Promise<{
     if (!seen.has(row.javis_item_id)) db.prepare("DELETE FROM content_items WHERE id = ?").run(row.id);
   }
 
-  syncBrandAssetsFromJavis(db, fanpagesDir, slugToCustomerId, now);
+  syncBrandAssetsFromJavis(db, fanpagesDir, slugToCustomerId, logoBySlug, now);
 
   return { enabled: true, customersSynced, contentSynced };
 }
 
-const BRAND_KEYWORDS = ["brand", "nhan-dien", "logo", "guideline", "palette", "mau", "font"];
+const BRAND_KEYWORDS = ["brand", "nhan-dien", "logo", "guideline", "palette", "mau", "font", "ho-so"];
 const POST_SUBDIRS = new Set(["posts", "bai-viet", "cho-duyet", "scheduled", "published"]);
+
+export function extractHexColors(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const matches = text.match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g) ?? [];
+  const unique = new Set<string>();
+  for (const m of matches) {
+    unique.add(m.toUpperCase());
+    if (unique.size >= 12) break;
+  }
+  return Array.from(unique);
+}
 
 function syncBrandAssetsFromJavis(
   db: ReturnType<typeof getSqliteDb>,
   fanpagesDir: string,
   slugToCustomerId: Map<string, string>,
+  logoBySlug: Map<string, string>,
   now: string,
 ) {
   for (const [slug, customerId] of slugToCustomerId.entries()) {
+    const bridgeLogo = logoBySlug.get(slug);
+    if (bridgeLogo) {
+      const logoUrl = mediaUrlFor(bridgeLogo);
+      const existingLogo = db
+        .prepare("SELECT id FROM brand_assets WHERE customer_id = ? AND file_url = ? LIMIT 1")
+        .get(customerId, logoUrl) as { id: string } | undefined;
+      if (!existingLogo) {
+        db.prepare(
+          "INSERT INTO brand_assets (id, customer_id, title, asset_type, file_url, metadata, updated_at) VALUES (?, ?, ?, 'image', ?, ?, ?)",
+        ).run(
+          crypto.randomUUID(),
+          customerId,
+          `Logo Fanpage (${slug})`,
+          logoUrl,
+          JSON.stringify({ source: "javis", relativePath: bridgeLogo }),
+          now,
+        );
+      }
+    }
+
     const clientDir = path.join(fanpagesDir, slug);
     if (!existsSync(clientDir)) continue;
 
@@ -194,10 +230,12 @@ function syncBrandAssetsFromJavis(
         const title = entry.name.replace(ext, "").replace(/[-_]+/g, " ").trim() || entry.name;
         const assetType = ext === ".pdf" ? "pdf" : ext === ".md" ? "guideline" : "image";
         const contentText = ext === ".md" ? readFileSync(fullPath, "utf8").slice(0, 8000) : null;
+        const colors = extractHexColors(contentText);
         const metadataJson = JSON.stringify({
           source: "javis",
           relativePath: relFromClient,
           content: contentText,
+          colors,
         });
 
         const existing = db
