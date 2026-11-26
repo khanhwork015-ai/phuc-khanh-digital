@@ -12,21 +12,21 @@ import {
   RotateCcw,
   Share2,
   ThumbsUp,
-  Wheat,
 } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
+import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
 import { ScrollScale } from "@/components/motion/ScrollScale";
-import { BakeryPhoto } from "@/components/ui/BakeryPhoto";
+import { HoaSuaPhoto } from "@/components/ui/HoaSuaPhoto";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { approvalContent, approvalPost, approvalStatuses } from "@/data/approval-demo";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const INITIAL_STATUS = 2; // Chờ khách duyệt
-const QUICK_NOTES = ["Đổi sang ảnh khác", "Sửa giá combo thành 115.000đ", "Đăng sớm hơn 1 tiếng"];
+const QUICK_NOTES = ["Đổi sang ảnh khác", "Làm rõ thông báo hoạt động ngày 24/11", "Đăng sớm hơn 1 tiếng"];
 
 type Mode = "idle" | "feedback" | "approved" | "published" | "revising";
 
@@ -325,7 +325,7 @@ function Portal({ onLock }: { onLock: () => void }) {
             {mode === "idle" && (
               <Panel key="idle">
                 <p className="text-[14px] leading-relaxed text-fg-2">
-                  Bài đã qua 4 bước kiểm duyệt của đội ngũ. Bạn xem lại nội dung, giá và hình ảnh, nếu ổn thì bấm Duyệt.
+                  Bài đã qua 4 bước kiểm duyệt của đội ngũ. Bạn xem lại nội dung, ngày thông báo và hình ảnh, nếu ổn thì bấm Duyệt.
                 </p>
                 <div className="mt-auto grid gap-2.5 pt-6">
                   <button
@@ -517,22 +517,26 @@ function PostPreview({ published }: { published: boolean }) {
   return (
     <article className="overflow-hidden rounded-xl border border-line bg-canvas">
       <header className="flex items-center gap-3 px-3.5 pt-3.5">
-        <div className="flex size-9 items-center justify-center rounded-full border border-line bg-elevated text-[12px] font-bold text-ivory">
-          {approvalPost.initials}
-        </div>
-        <div className="min-w-0">
+        <Image
+          src={approvalPost.avatarSrc}
+          alt="Ảnh đại diện Hoa Sữa"
+          width={36}
+          height={36}
+          className="size-9 shrink-0 rounded-full border border-line object-cover"
+        />
+        <div className="min-w-0 flex-1">
           <p className="truncate text-[13.5px] font-semibold text-fg">{approvalPost.pageName}</p>
           <p className="flex items-center gap-1 text-[11.5px] text-fg-3">
             {published ? "Vừa xong" : approvalPost.scheduledLabel} · <Globe2 size={10} strokeWidth={1.5} aria-hidden />
           </p>
         </div>
       </header>
-      <p className="px-3.5 pt-2.5 text-[13.5px] leading-[1.55] text-fg/90">{approvalPost.caption}</p>
+      <p className="whitespace-pre-line px-3.5 pt-2.5 text-[13.5px] leading-[1.55] text-fg/90">{approvalPost.caption}</p>
       <div className="relative mt-3 aspect-[4/3] overflow-hidden border-y border-line">
-        <BakeryPhoto title={approvalPost.photoTitle} subtitle={approvalPost.photoSub} />
+        <HoaSuaPhoto />
         <span className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-canvas/70 px-2 py-1 backdrop-blur-sm">
-          <Wheat size={14} strokeWidth={1.75} className="text-[#e7b878]" aria-hidden />
-          <span className="text-[9.5px] font-bold tracking-[0.08em] text-ivory">MỘC AN</span>
+          <Image src={approvalPost.logoSrc} alt="Logo Hoa Sữa Coffee & Tea" width={22} height={27} />
+          <span className="text-[9.5px] font-bold tracking-[0.08em] text-ivory">HOA SỮA</span>
         </span>
       </div>
       <div className="grid grid-cols-3 px-2 py-1.5 text-[12px] text-fg-2">

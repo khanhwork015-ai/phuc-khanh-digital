@@ -7,6 +7,7 @@ import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
 import { ScrollScale } from "@/components/motion/ScrollScale";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { HoaSuaPhoto } from "@/components/ui/HoaSuaPhoto";
 import {
   captionSamples,
   showcaseContent,
@@ -211,48 +212,54 @@ function VisualSampleCard({ item }: { item: VisualSample }) {
         className="relative aspect-[16/10] overflow-hidden border-b border-line"
         style={{ background: item.palette.bg }}
       >
-        {/* Vệt sáng tự nhiên */}
-        <div
-          aria-hidden
-          className="absolute -left-12 -top-12 h-[140%] w-1/2 rotate-[20deg] blur-2xl"
-          style={{ background: item.palette.accent, opacity: 0.14 }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 h-[38%] border-t border-white/10"
-          style={{ background: item.palette.surface }}
-        />
-        {/* Khung lưới tỉ lệ phụ */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-white/15"
-        />
+        {item.id === "hoa-sua-visual" ? (
+          <HoaSuaPhoto />
+        ) : (
+          <>
+            {/* Vệt sáng tự nhiên */}
+            <div
+              aria-hidden
+              className="absolute -left-12 -top-12 h-[140%] w-1/2 rotate-[20deg] blur-2xl"
+              style={{ background: item.palette.accent, opacity: 0.14 }}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 h-[38%] border-t border-white/10"
+              style={{ background: item.palette.surface }}
+            />
+            {/* Khung lưới tỉ lệ phụ */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-white/15"
+            />
 
-        {/* Vùng an toàn logo gốc */}
-        <div
-          className={cn(
-            "absolute flex items-center gap-1.5 rounded-lg border border-dashed border-accent/70 bg-canvas/80 px-2.5 py-1.5 backdrop-blur-sm",
-            logoPosClass[item.logoPosition],
-          )}
-        >
-          <span className="size-2 rounded-[2px]" style={{ background: item.palette.accent }} aria-hidden />
-          <span className="font-mono text-[10.5px] font-bold tracking-[0.08em] text-ivory">{item.logoLabel}</span>
-        </div>
+            {/* Vùng an toàn logo gốc */}
+            <div
+              className={cn(
+                "absolute flex items-center gap-1.5 rounded-lg border border-dashed border-accent/70 bg-canvas/80 px-2.5 py-1.5 backdrop-blur-sm",
+                logoPosClass[item.logoPosition],
+              )}
+            >
+              <span className="size-2 rounded-[2px]" style={{ background: item.palette.accent }} aria-hidden />
+              <span className="font-mono text-[10.5px] font-bold tracking-[0.08em] text-ivory">{item.logoLabel}</span>
+            </div>
 
-        {/* Chữ tiếng Việt trên ảnh */}
-        <div
-          className={cn(
-            "absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-6 sm:right-6",
-            item.logoPosition === "bottom-right" && "pr-24",
-          )}
-        >
-          <p className="text-lg font-bold leading-snug tracking-[-0.015em]" style={{ color: item.palette.text }}>
-            {item.photoTitle}
-          </p>
-          <p className="mt-1 font-mono text-[11.5px]" style={{ color: item.palette.accent }}>
-            {item.photoSub}
-          </p>
-        </div>
+            {/* Chữ tiếng Việt trên ảnh */}
+            <div
+              className={cn(
+                "absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-6 sm:right-6",
+                item.logoPosition === "bottom-right" && "pr-24",
+              )}
+            >
+              <p className="text-lg font-bold leading-snug tracking-[-0.015em]" style={{ color: item.palette.text }}>
+                {item.photoTitle}
+              </p>
+              <p className="mt-1 font-mono text-[11.5px]" style={{ color: item.palette.accent }}>
+                {item.photoSub}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="p-6">

@@ -3,6 +3,7 @@
 import { Check, FileImage, Send, TrendingUp } from "lucide-react";
 import { m } from "motion/react";
 import type { ProcessPreview as PreviewKey } from "@/data/process-steps";
+import { hoaSuaPost } from "@/data/site-config";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -30,15 +31,15 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
 
 function BrandKitPreview() {
   return (
-    <Frame label="Hồ sơ thương hiệu · Mộc An" meta="riêng biệt">
+    <Frame label="Hồ sơ thương hiệu · Hoa Sữa" meta="riêng biệt">
       <Row k="Bảng màu">
         <div className="flex gap-1.5">
-          {["#b7793a", "#2a2118", "#fbefdc", "#6b8f5e"].map((c) => (
+          {["#192938", "#243b2a", "#fbefdc", "#b6c97d"].map((c) => (
             <span key={c} className="size-6 rounded-md border border-line" style={{ background: c }} title={c} />
           ))}
         </div>
       </Row>
-      <Row k="Xưng hô">Tiệm gọi mình là &quot;tiệm&quot;, gọi khách là &quot;bạn&quot;</Row>
+      <Row k="Xưng hô">Thương hiệu xưng &quot;Hoa Sữa&quot;, gọi khách là &quot;Quý khách&quot;</Row>
       <Row k="Từ cần tránh">
         <div className="flex flex-wrap gap-1.5">
           {["rẻ nhất", "cam kết 100%", "siêu phẩm"].map((w) => (
@@ -48,16 +49,16 @@ function BrandKitPreview() {
           ))}
         </div>
       </Row>
-      <Row k="Bảng giá">
+      <Row k="Hoạt động">
         <ul className="space-y-1 font-mono text-[12.5px]">
-          <li className="flex justify-between gap-3"><span className="text-fg-2">Bánh mì bơ tỏi</span>25.000đ</li>
-          <li className="flex justify-between gap-3"><span className="text-fg-2">Combo 5 ổ</span>110.000đ</li>
+          <li className="flex justify-between gap-3"><span className="text-fg-2">Ngày 24/11</span>Vẫn mở cửa</li>
+          <li className="text-fg-2">{hoaSuaPost.address}</li>
         </ul>
       </Row>
       <Row k="Logo gốc">
         <span className="inline-flex items-center gap-2 rounded-lg border border-line-accent bg-accent-muted px-2.5 py-1 font-mono text-[12px] text-ivory">
           <FileImage size={14} strokeWidth={1.5} className="text-accent" aria-hidden />
-          moc-an-logo.svg
+          hoa-sua-logo.png
           <Check size={13} strokeWidth={2} className="text-accent" aria-hidden />
         </span>
       </Row>
@@ -140,16 +141,16 @@ function EditingPreview() {
     <div className="grid gap-3">
       <Frame label="Lượt 1 · đủ dữ kiện" meta="bản nháp">
         <p className="text-[13.5px] leading-relaxed text-fg-2">
-          <del className="text-fg-3 decoration-red-400/70">Bạn đang tìm kiếm một chiếc bánh mì hoàn hảo cho buổi sáng?</del>{" "}
-          Tiệm có bánh mì bơ tỏi giá <mark className="rounded bg-accent-muted px-1 text-ivory">25.000đ</mark>, ra lò lúc 6 giờ
-          sáng tại <mark className="rounded bg-accent-muted px-1 text-ivory">12 Lê Lợi</mark>.{" "}
+          <del className="text-fg-3 decoration-red-400/70">Ngày lễ đến rồi, bạn đã có điểm hẹn lý tưởng chưa?</del>{" "}
+          Hoa Sữa Coffee &amp; Tea vẫn <mark className="rounded bg-accent-muted px-1 text-ivory">hoạt động bình thường</mark> ngày{" "}
+          <mark className="rounded bg-accent-muted px-1 text-ivory">24/11</mark>.{" "}
           <del className="text-fg-3 decoration-red-400/70">Hãy đến ngay để trải nghiệm hương vị tuyệt vời!</del>
         </p>
       </Frame>
       <Frame label="Lượt 2 · gọt câu chữ" meta="sẵn sàng">
         <p className="text-[13.5px] leading-relaxed text-fg">
-          Bánh mì bơ tỏi ra lò lúc 6 giờ sáng, vỏ còn kêu rắc rắc khi bẻ. 25.000đ một ổ. Ghé 12 Lê Lợi trước 8 giờ để lấy mẻ còn
-          ấm nhé.
+          Nhân dịp Ngày Văn hóa Việt Nam – 24/11, Hoa Sữa Coffee &amp; Tea vẫn hoạt động bình thường để phục vụ Quý khách.
+          Hoa Sữa luôn sẵn sàng đón tiếp và phục vụ Quý khách!
         </p>
       </Frame>
     </div>
@@ -213,7 +214,7 @@ function ReportPreview() {
         ))}
       </dl>
       <p className="mt-4 rounded-xl border border-line bg-elevated/60 px-3.5 py-3 text-[13px] leading-relaxed text-fg-2">
-        <span className="font-medium text-fg">Tuần tới:</span> dời bài bán hàng sang 19:30, thêm 1 Reels quay cảnh ra lò buổi sáng.
+        <span className="font-medium text-fg">Tuần tới:</span> dời bài giới thiệu đồ uống sang 19:30, thêm 1 Reels quay không gian quán.
       </p>
     </Frame>
   );

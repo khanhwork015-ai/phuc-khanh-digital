@@ -1,3 +1,5 @@
+import { hoaSuaPost } from "./site-config";
+
 export const approvalContent = {
   eyebrow: "Cổng duyệt bài",
   title: "Duyệt bài nhanh như lướt Facebook, bảo mật bằng mã PIN riêng",
@@ -9,7 +11,7 @@ export const approvalContent = {
     "Góp ý ngay trên bài, đội ngũ sửa rồi gửi lại",
   ],
   demoPin: "2026",
-  portalUrl: "duyet.phuckhanhdigital.vn/moc-an",
+  portalUrl: "duyet.phuckhanhdigital.vn/hoa-sua",
 } as const;
 
 export const approvalStatuses = [
@@ -21,14 +23,8 @@ export const approvalStatuses = [
   "Đã đăng",
 ] as const;
 
-/** Bài mẫu trong cổng duyệt. Thương hiệu "Mộc An" là ví dụ minh họa. */
 export const approvalPost = {
-  pageName: "Tiệm Bánh Mộc An",
-  initials: "MA",
-  caption:
-    "Cuối tuần này tiệm mở thêm mẻ bánh lúc 15:00. Mua từ 5 ổ được tặng 1 hũ bơ tỏi nhà làm. Áp dụng thứ Bảy và Chủ nhật, tại 12 Lê Lợi.",
-  photoTitle: "Mẻ bánh chiều",
-  photoSub: "Ra lò 15:00 · 12 Lê Lợi",
-  scheduledLabel: "19:00 · Thứ Năm",
-  pillar: "Bài bán hàng",
+  ...hoaSuaPost,
+  scheduledLabel: "19:00 · 24/11/2026",
+  pillar: "Thông báo hoạt động",
 } as const;
