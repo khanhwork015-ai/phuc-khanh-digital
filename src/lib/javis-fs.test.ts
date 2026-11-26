@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   parseApprovalQueueMarkdown,
+  parseBrandProfileFields,
   parseCustomersMarkdown,
   removeCustomerRowInMarkdown,
   updateApprovalRowInMarkdown,
@@ -82,4 +83,25 @@ test("upsertCustomerRowInMarkdown và removeCustomerRowInMarkdown đồng bộ 2
   const removed = removeCustomerRowInMarkdown(modified.content, "tiem-banh-an");
   assert.equal(removed.removed, true);
   assert.doesNotMatch(removed.content, /tiem-banh-an/);
+});
+
+test("parseBrandProfileFields đọc được markdown bold, bảng và heading", () => {
+  const md = `
+# Brand Kit - SHIN AIOS
+- **Xưng hô:** SHIN AIOS
+- **Giọng văn**: Chuyên nghiệp, thực tế
+| Phong cách | Tối giản, công nghệ |
+| Hotline | 0909 123 456 |
+
+## Từ cần tránh
+- cam kết 100%
+- rẻ nhất
+`;
+
+  const parsed = parseBrandProfileFields(md);
+  assert.equal(parsed.pronouns, "SHIN AIOS");
+  assert.equal(parsed.tone, "Chuyên nghiệp, thực tế");
+  assert.equal(parsed.style, "Tối giản, công nghệ");
+  assert.equal(parsed.hotline, "0909 123 456");
+  assert.deepEqual(parsed.avoidWords, ["cam kết 100%", "rẻ nhất"]);
 });

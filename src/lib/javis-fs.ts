@@ -10,6 +10,7 @@ import {
   mediaUrlFor,
 } from "@/lib/approval-bridge";
 import {
+  parseBrandProfileFields,
   parseCustomersMarkdown,
   removeCustomerRowInMarkdown,
   upsertCustomerRowInMarkdown,
@@ -188,52 +189,7 @@ export function extractHexColors(text: string | null | undefined): string[] {
   return Array.from(unique);
 }
 
-function pickMarkdownField(text: string, patterns: RegExp[]): string | null {
-  for (const line of text.split(/\r?\n/)) {
-    const clean = line.replace(/^[-*>\s]+/, "").trim();
-    for (const pat of patterns) {
-      const m = clean.match(pat);
-      if (m?.[1]) {
-        const val = m[1].replace(/\*\*/g, "").trim();
-        if (val && val !== "-") return val;
-      }
-    }
-  }
-  return null;
-}
-
-export function parseBrandProfileFields(text: string | null | undefined) {
-  if (!text) {
-    return {
-      hotline: null,
-      address: null,
-      pronouns: null,
-      tone: null,
-      style: null,
-      avoidWords: [] as string[],
-      pricingLines: [] as Array<{ name: string; price: string }>,
-    };
-  }
-  const avoidRaw = pickMarkdownField(text, [/^(?:từ cần tránh|từ cấm|tránh dùng)\s*[:：]\s*(.+)$/i]);
-  const avoidWords = avoidRaw
-    ? avoidRaw
-        .split(/[,;]+/)
-        .map((w) => w.trim())
-        .filter(Boolean)
-    : [];
-
-  return {
-    hotline: pickMarkdownField(text, [
-      /^(?:hotline|sđt|điện thoại|số điện thoại)\s*[:：]\s*(.+)$/i,
-    ]),
-    address: pickMarkdownField(text, [/^(?:địa chỉ|address)\s*[:：]\s*(.+)$/i]),
-    pronouns: pickMarkdownField(text, [/^(?:xưng hô|cách xưng hô)\s*[:：]\s*(.+)$/i]),
-    tone: pickMarkdownField(text, [/^(?:giọng văn|tone(?:\s+of\s+voice)?)\s*[:：]\s*(.+)$/i]),
-    style: pickMarkdownField(text, [/^(?:phong cách|style|visual)\s*[:：]\s*(.+)$/i]),
-    avoidWords,
-    pricingLines: [] as Array<{ name: string; price: string }>,
-  };
-}
+export { parseBrandProfileFields };
 
 function syncBrandAssetsFromJavis(
   db: ReturnType<typeof getSqliteDb>,
@@ -314,14 +270,39 @@ function syncBrandAssetsFromJavis(
         });
 
         const existing = db
-          .prepare("SELECT id FROM brand_assets WHERE customer_id = ? AND file_url = ? LIMIT 1")
-          .get(customerId, fileUrl) as { id: string } | undefined;
+          .prepare("SELECT id, metadata FROM brand_assets WHERE customer_id = ? AND file_url = ? LIMIT 1")
+          .get(customerId, fileUrl) as { id: string; metadata: string | null } | undefined;
 
         if (existing) {
+          let prevMeta: Record<string, unknown> = {};
+          try {
+            prevMeta = existing.metadata ? (JSON.parse(existing.metadata) as Record<string, unknown>) : {};
+          } catch {
+            prevMeta = {};
+          }
+          const mergedMetadataJson = JSON.stringify({
+            source: "javis",
+            relativePath: relFromClient,
+            content: contentText,
+            colors: colors.length > 0 ? colors : ((prevMeta.colors as string[] | undefined) ?? []),
+            hotline: profileFields.hotline ?? (prevMeta.hotline as string | null | undefined) ?? null,
+            address: profileFields.address ?? (prevMeta.address as string | null | undefined) ?? null,
+            pronouns: profileFields.pronouns ?? (prevMeta.pronouns as string | null | undefined) ?? null,
+            tone: profileFields.tone ?? (prevMeta.tone as string | null | undefined) ?? null,
+            style: profileFields.style ?? (prevMeta.style as string | null | undefined) ?? null,
+            avoidWords:
+              profileFields.avoidWords.length > 0
+                ? profileFields.avoidWords
+                : ((prevMeta.avoidWords as string[] | undefined) ?? []),
+            pricingLines:
+              profileFields.pricingLines.length > 0
+                ? profileFields.pricingLines
+                : ((prevMeta.pricingLines as Array<{ name: string; price: string }> | undefined) ?? []),
+          });
           db.prepare("UPDATE brand_assets SET title = ?, asset_type = ?, metadata = ?, updated_at = ? WHERE id = ?").run(
             title,
             assetType,
-            metadataJson,
+            mergedMetadataJson,
             now,
             existing.id,
           );

@@ -219,3 +219,127 @@ export function removeCustomerRowInMarkdown(
   });
   return { removed, content: lines.join("\n") };
 }
+
+function cleanMarkdownLine(line: string): string {
+  return line
+    .replace(/^\s*[-*+>#]+\s*/, "")
+    .replace(/\*\*/g, "")
+    .replace(/__/g, "")
+    .replace(/`/g, "")
+    .trim();
+}
+
+function pickMarkdownField(text: string, patterns: RegExp[], headingPatterns?: RegExp[]): string | null {
+  const lines = text.split(/\r?\n/);
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      const cells = trimmed
+        .split("|")
+        .slice(1, -1)
+        .map((c) => cleanMarkdownLine(c));
+      if (cells.length >= 2 && !/^[-:\s]+$/.test(cells[0])) {
+        const keyCell = `${cells[0]}: ${cells.slice(1).join(" ")}`;
+        for (const pat of patterns) {
+          const m = keyCell.match(pat);
+          if (m?.[1]) {
+            const val = m[1].trim();
+            if (val && val !== "-") return val;
+          }
+        }
+      }
+    }
+
+    const clean = cleanMarkdownLine(rawLine);
+    for (const pat of patterns) {
+      const m = clean.match(pat);
+      if (m?.[1]) {
+        const val = m[1].trim();
+        if (val && val !== "-") return val;
+      }
+    }
+  }
+
+  if (headingPatterns && headingPatterns.length > 0) {
+    let collecting = false;
+    const collected: string[] = [];
+
+    for (const rawLine of lines) {
+      const trimmed = rawLine.trim();
+      const isHeading = /^#{1,6}\s+/.test(trimmed);
+      if (isHeading) {
+        if (collecting) break;
+        const headingText = cleanMarkdownLine(trimmed).replace(/[:：]\s*$/, "");
+        if (headingPatterns.some((hp) => hp.test(headingText))) {
+          collecting = true;
+        }
+        continue;
+      }
+
+      if (collecting) {
+        const clean = cleanMarkdownLine(trimmed);
+        if (!clean) {
+          if (collected.length > 0) break;
+          continue;
+        }
+        if (clean !== "-") collected.push(clean);
+      }
+    }
+
+    if (collected.length > 0) {
+      return collected.join(", ");
+    }
+  }
+
+  return null;
+}
+
+export function parseBrandProfileFields(text: string | null | undefined) {
+  if (!text) {
+    return {
+      hotline: null,
+      address: null,
+      pronouns: null,
+      tone: null,
+      style: null,
+      avoidWords: [] as string[],
+      pricingLines: [] as Array<{ name: string; price: string }>,
+    };
+  }
+  const avoidRaw = pickMarkdownField(
+    text,
+    [/^(?:từ cần tránh|từ ngữ cần tránh|ngôn từ cần tránh|từ cấm|tránh dùng|không dùng)\s*[:：]\s*(.+)$/i],
+    [/^(?:từ cần tránh|từ ngữ cần tránh|ngôn từ cần tránh|từ cấm|tránh dùng)$/i],
+  );
+  const avoidWords = avoidRaw
+    ? avoidRaw
+        .split(/[,;]+/)
+        .map((w) => w.trim())
+        .filter(Boolean)
+    : [];
+
+  return {
+    hotline: pickMarkdownField(text, [
+      /^(?:hotline|sđt|điện thoại|số điện thoại)\s*[:：]\s*(.+)$/i,
+    ]),
+    address: pickMarkdownField(text, [/^(?:địa chỉ|address)\s*[:：]\s*(.+)$/i]),
+    pronouns: pickMarkdownField(
+      text,
+      [/^(?:xưng hô|cách xưng hô|đại từ xưng hô|tự xưng|người viết xưng)\s*[:：]\s*(.+)$/i],
+      [/^(?:xưng hô|cách xưng hô|đại từ xưng hô)$/i],
+    ),
+    tone: pickMarkdownField(
+      text,
+      [/^(?:giọng văn|giọng điệu|văn phong|tone(?:\s+of\s+voice)?)\s*[:：]\s*(.+)$/i],
+      [/^(?:giọng văn|giọng điệu|văn phong|tone(?:\s+of\s+voice)?)$/i],
+    ),
+    style: pickMarkdownField(
+      text,
+      [/^(?:phong cách|style|visual)\s*[:：]\s*(.+)$/i],
+      [/^(?:phong cách|style|visual)$/i],
+    ),
+    avoidWords,
+    pricingLines: [] as Array<{ name: string; price: string }>,
+  };
+}
