@@ -1,5 +1,10 @@
 import type { LeadPlanValue } from "@/lib/lead-fields";
 
+export type PricingFeatureItem = {
+  title: string;
+  detail: string;
+};
+
 export type PricingPlan = {
   id: LeadPlanValue;
   name: string;
@@ -9,71 +14,70 @@ export type PricingPlan = {
   badge?: string;
   featured?: boolean;
   summary: string;
-  features: string[];
+  features: PricingFeatureItem[];
   ctaLabel: string;
 };
 
-/**
- * Cấu hình bảng giá dịch vụ vận hành Fanpage trọn gói.
- * Có thể cập nhật trực tiếp priceLabel và billingNote tại đây.
- */
 export const PRICING_CONFIG: PricingPlan[] = [
   {
     id: "standard",
-    name: "Gói Khởi Động",
-    subtitle: "Standard",
-    priceLabel: "Liên hệ báo giá",
-    billingNote: "Phù hợp SME mới xây kênh đều đặn",
-    summary: "Duy trì nhịp đăng ổn định mỗi tuần với Brand Kit riêng và cổng duyệt bài 1 chạm.",
-    features: [
-      "12 bài viết hoàn chỉnh / tháng (tỷ lệ 60 / 25 / 15)",
-      "Chuẩn hóa Brand Kit, giọng điệu và bảng từ cấm riêng",
-      "Thiết kế ảnh gắn file logo gốc đúng vùng an toàn",
-      "Cổng duyệt bài 1 chạm bảo mật bằng mã PIN",
-      "Tự động đăng đúng khung giờ đã hẹn, báo cáo tháng",
-    ],
-    ctaLabel: "Tư vấn gói Khởi Động",
-  },
-  {
-    id: "growth",
-    name: "Gói Tăng Trưởng",
-    subtitle: "Growth",
-    priceLabel: "Liên hệ báo giá",
-    billingNote: "Phù hợp doanh nghiệp cần phủ đều hằng tuần",
-    badge: "Khuyên dùng",
+    name: "Dịch vụ quảng cáo Facebook & quản trị fanpage",
+    subtitle: "Gói vận hành trọn gói",
+    priceLabel: "2.000.000 VNĐ / tháng",
+    billingNote: "Áp dụng cho 01 fanpage · 8–10 bài đăng mỗi tháng",
+    badge: "Ưu đãi khai trương",
     featured: true,
-    summary: "Tăng tần suất xuất hiện với bài viết, video Reels ngắn và báo cáo số liệu thật mỗi tuần.",
+    summary:
+      "Phúc Khánh Digital đồng hành cùng Quý khách trong việc xây dựng nội dung, chăm sóc fanpage và triển khai quảng cáo phù hợp với mục tiêu kinh doanh. Chúng tôi mong muốn giúp doanh nghiệp xây dựng hình ảnh chỉn chu, tiếp cận khách hàng phù hợp và tạo thêm cơ hội tư vấn, bán hàng.",
     features: [
-      "20 bài viết / tháng + video Reels ngắn xen kẽ",
-      "Biên tập 2 lượt cho câu chữ tự nhiên, đúng chất thương hiệu",
-      "Cổng duyệt bài 1 chạm, phản hồi chỉnh sửa trong ngày",
-      "Báo cáo số liệu thật vào sáng Chủ nhật hằng tuần",
-      "Tối ưu khung giờ đăng và chủ đề theo tương tác thực tế",
+      {
+        title: "Lập kế hoạch nội dung",
+        detail: "Xây dựng chủ đề và lịch đăng phù hợp với sản phẩm, dịch vụ của doanh nghiệp.",
+      },
+      {
+        title: "Sản xuất 8–10 bài đăng mỗi tháng",
+        detail: "Bao gồm viết nội dung và thiết kế hình ảnh.",
+      },
+      {
+        title: "Quay dựng video và chụp ảnh cho doanh nghiệp",
+        detail:
+          "Thực hiện hình ảnh, video giới thiệu sản phẩm, dịch vụ, không gian và hoạt động của doanh nghiệp, phục vụ nội dung fanpage và quảng cáo.",
+      },
+      {
+        title: "Quản trị fanpage",
+        detail: "Đăng bài theo lịch, cập nhật thông tin và theo dõi hoạt động của trang.",
+      },
+      {
+        title: "Triển khai quảng cáo Facebook",
+        detail: "Thiết lập, theo dõi và điều chỉnh chiến dịch theo mục tiêu, ngân sách đã thống nhất.",
+      },
+      {
+        title: "Báo cáo kết quả hằng tháng",
+        detail: "Tổng hợp hoạt động nội dung và kết quả quảng cáo để cùng đánh giá, điều chỉnh hướng triển khai.",
+      },
     ],
-    ctaLabel: "Chọn gói Tăng Trưởng",
-  },
-  {
-    id: "custom",
-    name: "Gói Đa Kênh / Theo Yêu Cầu",
-    subtitle: "Custom",
-    priceLabel: "Thiết kế riêng",
-    billingNote: "Dành cho chuỗi cửa hàng hoặc nhiều Fanpage",
-    summary: "Vận hành đồng thời nhiều Fanpage hoặc thương hiệu con với hồ sơ tách biệt hoàn toàn.",
-    features: [
-      "Tùy chỉnh số lượng bài viết và Reels theo từng chi nhánh",
-      "Mỗi Fanpage một Brand Kit và link duyệt PIN độc lập",
-      "Đồng bộ lịch chiến dịch, khuyến mãi theo từng điểm bán",
-      "Tổng hợp báo cáo so sánh hiệu quả giữa các trang",
-      "Người phụ trách đồng hành xuyên suốt qua Zalo nhóm riêng",
-    ],
-    ctaLabel: "Nhận đề xuất gói riêng",
+    ctaLabel: "Đăng ký tư vấn gói dịch vụ",
   },
 ];
 
 export const pricingContent = {
   eyebrow: "Gói vận hành & FAQ",
-  title: "Chọn nhịp độ phù hợp với giai đoạn của doanh nghiệp",
+  title: "Dịch vụ quảng cáo Facebook & quản trị fanpage",
   description:
-    "Không bán phần mềm để bạn tự xoay xở. Mỗi gói đều bao gồm đội ngũ biên tập, thiết kế ảnh gắn logo gốc và cổng duyệt riêng.",
-  note: "Chi phí cụ thể được báo minh bạch theo ngành hàng và khối lượng hình ảnh/video thực tế sau buổi trao đổi 15 phút.",
+    "Chi phí minh bạch 2.000.000 đồng/tháng cho 01 fanpage, bao gồm đội ngũ biên tập, thiết kế ảnh gắn logo gốc và cổng duyệt bài riêng.",
+  openingOffer: {
+    badge: "Ưu đãi đồng hành nhân dịp khai trương",
+    paragraphs: [
+      "Hưởng ứng dịp khai trương, Phúc Khánh Digital dành tặng Quý khách dịch vụ quay dựng video và chụp ảnh miễn phí trong 3 tháng đầu, kể từ ngày khai trương công ty, khi sử dụng gói dịch vụ trên.",
+      "Thông qua những hình ảnh, video được đầu tư và hoạt động truyền thông đều đặn, chúng tôi mong muốn giúp cửa hàng tạo dấu ấn ban đầu và đưa sản phẩm, dịch vụ đến gần hơn với khách hàng. Đây cũng là khoảng thời gian để Phúc Khánh Digital thể hiện chất lượng công việc, sự đồng hành và giá trị thực tế mang lại cho doanh nghiệp.",
+    ],
+  },
+  cooperation: {
+    title: "Hiệu quả và định hướng hợp tác lâu dài",
+    paragraphs: [
+      "Chúng tôi tập trung xây dựng nội dung phù hợp, duy trì sự hiện diện đều đặn và theo dõi kết quả quảng cáo để từng bước cải thiện hiệu quả. Trước khi triển khai, hai bên sẽ thống nhất mục tiêu ưu tiên và các chỉ số theo dõi phù hợp với tình hình kinh doanh.",
+      "Sau 3 tháng, Phúc Khánh Digital sẽ cùng Quý khách nhìn lại những nội dung đã thực hiện và kết quả thực tế đạt được. Nếu Quý khách mong muốn tiếp tục đồng hành, hai bên sẽ trao đổi và thống nhất mức phí cho giai đoạn tiếp theo dựa trên nhu cầu, khối lượng công việc và phạm vi dịch vụ, trước khi tiếp tục triển khai.",
+    ],
+  },
+  note: "Lưu ý: Áp dụng cho 01 fanpage. Giá chưa bao gồm tiền chạy quảng cáo trả cho Meta. Khách hàng duyệt nội dung và ngân sách trước khi thực hiện.",
 } as const;

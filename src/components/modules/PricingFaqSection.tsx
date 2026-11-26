@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, ChevronDown } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Gift, Handshake } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useState } from "react";
 import { Parallax } from "@/components/motion/Parallax";
@@ -35,81 +35,112 @@ export function PricingFaqSection() {
           id="pricing-title"
         />
 
-        {/* Bảng gói 3 cột */}
-        <ScrollScale from={0.93} toExit={0.97} className="mt-14">
-          <div className="grid gap-5 lg:grid-cols-3">
-          {PRICING_CONFIG.map((plan, idx) => {
-            const card = (
-            <Reveal
-              key={plan.id}
-              delay={idx * 0.06}
-              className={cn(
-                "flex h-full flex-col rounded-2xl border p-7 transition-colors duration-200 md:p-8",
-                plan.featured
-                  ? "border-line-accent bg-surface hover:border-accent/60"
-                  : "border-line bg-surface/40 hover:border-line-accent/50 hover:bg-surface/80",
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="font-mono text-[11.5px] uppercase tracking-[0.1em] text-fg-3">
-                    {plan.subtitle}
-                  </span>
-                  <h3 className="mt-1.5 text-xl font-semibold tracking-[-0.02em] text-fg">{plan.name}</h3>
-                </div>
-                {plan.badge && (
-                  <span className="rounded-lg border border-line-accent bg-accent-muted px-2.5 py-1 text-[12px] font-medium text-accent">
-                    {plan.badge}
-                  </span>
-                )}
-              </div>
+        <ScrollScale from={0.95} toExit={0.98} className="mt-14">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-stretch">
+            {PRICING_CONFIG.map((plan) => (
+              <Parallax key={plan.id} distance={-18} className="h-full">
+                <TiltCard maxDeg={3} className="h-full [&>div]:h-full">
+                  <Reveal
+                    delay={0.04}
+                    className="flex h-full flex-col rounded-2xl border border-line-accent bg-surface p-7 transition-colors duration-200 hover:border-accent/60 md:p-8"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <span className="font-mono text-[11.5px] uppercase tracking-[0.1em] text-fg-3">
+                          {plan.subtitle}
+                        </span>
+                        <h3 className="mt-1.5 text-xl font-semibold tracking-[-0.02em] text-fg md:text-2xl">
+                          {plan.name}
+                        </h3>
+                      </div>
+                      {plan.badge && (
+                        <span className="rounded-lg border border-line-accent bg-accent-muted px-2.5 py-1 text-[12px] font-medium text-accent">
+                          {plan.badge}
+                        </span>
+                      )}
+                    </div>
 
-              <div className="mt-6 border-y border-line py-5">
-                <p className="text-2xl font-bold tracking-[-0.02em] text-ivory">{plan.priceLabel}</p>
-                <p className="mt-1 text-[13.5px] text-fg-3">{plan.billingNote}</p>
-              </div>
+                    <div className="mt-6 border-y border-line py-5">
+                      <p className="text-2xl font-bold tracking-[-0.02em] text-ivory md:text-3xl">
+                        {plan.priceLabel}
+                      </p>
+                      <p className="mt-1.5 text-[13.5px] text-fg-2">{plan.billingNote}</p>
+                    </div>
 
-              <p className="mt-5 text-[14.5px] leading-relaxed text-fg-2">{plan.summary}</p>
+                    <p className="mt-5 text-[14.5px] leading-relaxed text-fg-2">{plan.summary}</p>
 
-              <ul className="mt-6 flex-1 space-y-3">
-                {plan.features.map((feat) => (
-                  <li key={feat} className="flex items-start gap-2.5 text-[14px] leading-snug text-fg-2">
-                    <Check size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-accent" aria-hidden />
-                    {feat}
-                  </li>
-                ))}
-              </ul>
+                    <div className="mt-6 flex-1">
+                      <p className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-accent">
+                        Gói dịch vụ bao gồm
+                      </p>
+                      <ul className="mt-4 space-y-3">
+                        {plan.features.map((feat) => (
+                          <li key={feat.title} className="flex items-start gap-2.5 text-[14px] leading-relaxed text-fg-2">
+                            <Check size={15} strokeWidth={2} className="mt-1 shrink-0 text-accent" aria-hidden />
+                            <span>
+                              <strong className="font-semibold text-fg">{feat.title}:</strong> {feat.detail}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
-              <button
-                type="button"
-                onClick={() => selectPlan(plan.id)}
-                className={cn(
-                  "mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[14.5px] font-semibold transition-[background-color,border-color,color,transform] duration-200 ease-out hover:-translate-y-px",
-                  plan.featured
-                    ? "bg-accent text-canvas hover:bg-accent-hover"
-                    : "border border-line-strong bg-white/[0.02] text-fg hover:border-white/30 hover:bg-white/[0.05]",
-                )}
-              >
-                {plan.ctaLabel}
-                <ArrowRight size={15} strokeWidth={1.75} aria-hidden />
-              </button>
-            </Reveal>
-            );
-            // Cả 3 thẻ đều nghiêng nhẹ theo chuột khi hover + parallax lệch pha giữa 3 thẻ
-            return (
-              <Parallax key={plan.id} distance={[-28, 18, -28][idx] ?? 0} className="h-full">
-                <TiltCard maxDeg={4} className="h-full [&>div]:h-full">
-                  {card}
+                    <button
+                      type="button"
+                      onClick={() => selectPlan(plan.id)}
+                      className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-[14.5px] font-semibold text-canvas transition-[background-color,border-color,color,transform] duration-200 ease-out hover:-translate-y-px hover:bg-accent-hover"
+                    >
+                      {plan.ctaLabel}
+                      <ArrowRight size={15} strokeWidth={1.75} aria-hidden />
+                    </button>
+                  </Reveal>
                 </TiltCard>
               </Parallax>
-            );
-          })}
+            ))}
+
+            <div className="flex h-full flex-col gap-5">
+              <Reveal
+                delay={0.08}
+                className="rounded-2xl border border-line-accent bg-accent-muted/20 p-6 md:p-7"
+              >
+                <div className="flex items-center gap-2.5 text-accent">
+                  <Gift size={18} strokeWidth={1.75} aria-hidden />
+                  <h3 className="text-base font-semibold tracking-tight text-fg">
+                    {pricingContent.openingOffer.badge}
+                  </h3>
+                </div>
+                <div className="mt-4 space-y-3 text-[14px] leading-relaxed text-fg-2">
+                  {pricingContent.openingOffer.paragraphs.map((p) => (
+                    <p key={p}>{p}</p>
+                  ))}
+                </div>
+              </Reveal>
+
+              <Reveal
+                delay={0.12}
+                className="flex flex-1 flex-col justify-between rounded-2xl border border-line bg-surface/60 p-6 md:p-7"
+              >
+                <div>
+                  <div className="flex items-center gap-2.5 text-accent">
+                    <Handshake size={18} strokeWidth={1.75} aria-hidden />
+                    <h3 className="text-base font-semibold tracking-tight text-fg">
+                      {pricingContent.cooperation.title}
+                    </h3>
+                  </div>
+                  <div className="mt-4 space-y-3 text-[14px] leading-relaxed text-fg-2">
+                    {pricingContent.cooperation.paragraphs.map((p) => (
+                      <p key={p}>{p}</p>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-xl border border-line bg-canvas/70 px-4 py-3 text-[13px] leading-relaxed text-fg-2">
+                  {pricingContent.note}
+                </div>
+              </Reveal>
+            </div>
           </div>
         </ScrollScale>
-
-        <Reveal delay={0.12}>
-          <p className="mt-6 text-[13.5px] text-fg-3">{pricingContent.note}</p>
-        </Reveal>
 
         {/* FAQ Accordion */}
         <div className="mt-24 grid gap-10 border-t border-line pt-16 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14">

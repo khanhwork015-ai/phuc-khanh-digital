@@ -45,7 +45,7 @@ export function LeadCaptureSection() {
       fullName: "",
       phone: "",
       fanpageUrl: "",
-      plan: "growth",
+      plan: "standard",
       website: "",
     },
   });
