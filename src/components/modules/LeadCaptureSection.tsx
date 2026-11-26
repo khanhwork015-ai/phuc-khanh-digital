@@ -113,9 +113,9 @@ export function LeadCaptureSection() {
   };
 
   return (
-    <section id="dang-ky-tu-van" aria-labelledby="lead-title" className="border-b border-line py-24 md:py-32">
-      <div className="mx-auto grid max-w-7xl gap-14 px-5 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-        <div>
+    <section id="dang-ky-tu-van" aria-labelledby="lead-title" className="overflow-x-clip border-b border-line py-24 md:py-32">
+      <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-14 px-5 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+        <div className="min-w-0">
           <SectionHeader
             index="07"
             eyebrow="Đăng ký tư vấn"
@@ -158,7 +158,7 @@ export function LeadCaptureSection() {
           </Reveal>
         </div>
 
-        <Reveal delay={0.1}>
+        <Reveal delay={0.1} className="min-w-0">
           <div className="rounded-2xl border border-line-strong bg-surface p-6 md:p-8">
             {submitted ? (
               <div role="status" className="flex min-h-[380px] flex-col justify-between">
@@ -312,10 +312,12 @@ export function LeadCaptureSection() {
                       planOpen ? "border-line-accent" : "border-line hover:border-line-strong focus:border-line-accent",
                     )}
                   >
-                    <span className="flex items-center gap-2.5 truncate">
-                      <span>{PRICING_CONFIG.find((p) => p.id === selectedPlan)?.name ?? "Chọn gói"}</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className="min-w-0 truncate">
+                        {PRICING_CONFIG.find((p) => p.id === selectedPlan)?.name ?? "Chọn gói"}
+                      </span>
                       {PRICING_CONFIG.find((p) => p.id === selectedPlan)?.badge && (
-                        <span className="rounded-md border border-line-accent bg-accent-muted px-1.5 py-0.5 text-[11px] font-medium text-accent">
+                        <span className="shrink-0 rounded-md border border-line-accent bg-accent-muted px-1.5 py-0.5 text-[11px] font-medium text-accent">
                           {PRICING_CONFIG.find((p) => p.id === selectedPlan)?.badge}
                         </span>
                       )}

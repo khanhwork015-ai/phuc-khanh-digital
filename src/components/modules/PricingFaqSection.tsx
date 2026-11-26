@@ -25,7 +25,7 @@ export function PricingFaqSection() {
   };
 
   return (
-    <section id="goi-van-hanh" aria-labelledby="pricing-title" className="border-b border-line py-24 md:py-32">
+    <section id="goi-van-hanh" aria-labelledby="pricing-title" className="overflow-x-clip border-b border-line py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader
           index="06"
@@ -38,7 +38,7 @@ export function PricingFaqSection() {
         <ScrollScale from={0.95} toExit={0.98} className="mt-14">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-stretch">
             {PRICING_CONFIG.map((plan) => (
-              <Parallax key={plan.id} distance={-18} className="h-full">
+              <Parallax key={plan.id} distance={-18} className="h-full min-w-0">
                 <TiltCard maxDeg={3} className="h-full [&>div]:h-full">
                   <Reveal
                     delay={0.04}

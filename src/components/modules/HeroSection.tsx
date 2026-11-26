@@ -15,7 +15,7 @@ import { TiltCard } from "./hero/TiltCard";
 export function HeroSection() {
   return (
     <>
-      <section aria-labelledby="hero-title" className="relative isolate border-b border-line">
+      <section aria-labelledby="hero-title" className="relative isolate overflow-x-clip border-b border-line">
         <AmbientShaderCanvas className="-z-20" />
         <div
           aria-hidden
@@ -73,9 +73,9 @@ export function HeroSection() {
       <KineticMarquee />
 
       {/* Khối minh họa bài đăng thực tế tách riêng để không che chuông 3D ở Hero, phóng zoom-in + parallax khi cuộn tới */}
-      <section aria-label="Minh họa bài đăng Fanpage" className="overflow-hidden border-b border-line py-20 md:py-28">
+      <section aria-label="Minh họa bài đăng Fanpage" className="overflow-x-clip border-b border-line py-20 md:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 md:px-8 lg:grid-cols-[44fr_56fr] lg:gap-16">
-          <Parallax distance={38}>
+          <Parallax distance={38} className="min-w-0">
             <Reveal>
               <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-accent">Đầu ra thực tế</p>
               <h2 className="mt-3 text-balance text-2xl font-bold leading-snug tracking-[-0.02em] text-fg md:text-3xl">
@@ -87,7 +87,7 @@ export function HeroSection() {
             </Reveal>
           </Parallax>
 
-          <Parallax distance={-44}>
+          <Parallax distance={-44} className="min-w-0">
             <ScrollScale from={0.78} toExit={0.92} rotateXFrom={12}>
               <TiltCard>
                 <HeroPostMockup />

@@ -301,7 +301,7 @@ function Caption({ text, typing }: { text: string; typing: boolean }) {
   }, [typing, text]);
 
   return (
-    <p className="relative whitespace-pre-line px-4 pt-3 text-[14px] leading-[1.55] text-fg/90">
+    <p className="relative min-w-0 break-words whitespace-pre-line px-4 pt-3 text-[14px] leading-[1.55] text-fg/90">
       {/* Giữ chiều cao cố định để khung không nhảy khi gõ */}
       <span className="invisible" aria-hidden>
         {text}

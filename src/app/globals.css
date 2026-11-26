@@ -36,6 +36,7 @@
 
 html {
   background: var(--color-canvas);
+  overflow-x: clip;
   /* Khi không dùng Lenis (máy cảm ứng): cuộn mượt gốc và trừ chiều cao Navbar khi nhảy tới mục */
   scroll-behavior: smooth;
   scroll-padding-top: 72px;
@@ -44,6 +45,7 @@ html {
 body {
   background: var(--color-canvas);
   color: var(--color-fg);
+  overflow-x: clip;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
