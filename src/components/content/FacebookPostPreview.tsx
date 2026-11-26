@@ -4,8 +4,8 @@ import { Globe, MessageCircle, Share2, ThumbsUp } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-const PREVIEW_CHARS = 280;
-const PREVIEW_LINES = 5;
+const PREVIEW_CHARS = 140;
+const PREVIEW_LINES = 2;
 
 /** Cuts the caption the way Facebook does: a few lines or ~280 chars, then "... Xem thêm". */
 function previewOf(text: string): { short: string; truncated: boolean } {
