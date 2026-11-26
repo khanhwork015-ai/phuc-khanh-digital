@@ -21,7 +21,7 @@ function GuardrailCard({ item, className }: { item: GuardrailItem; className?: s
   return (
     <div
       className={cn(
-        "group flex flex-col self-stretch rounded-2xl border border-line bg-surface/55 p-6 transition-all duration-300 hover:border-line-strong hover:bg-surface md:p-8",
+        "group flex flex-col self-stretch rounded-2xl border border-line bg-surface/55 p-5 transition-all duration-300 hover:border-line-strong hover:bg-surface md:p-8",
         className,
       )}
     >
@@ -35,10 +35,10 @@ function GuardrailCard({ item, className }: { item: GuardrailItem; className?: s
         <span className="font-mono text-[12px] text-fg-3">{item.number}</span>
       </div>
 
-      <h3 className="mt-6 text-lg font-semibold tracking-[-0.015em] text-fg md:text-xl">{item.title}</h3>
-      <p className="mt-3 flex-1 text-[15px] leading-relaxed text-fg-2">{item.description}</p>
+      <h3 className="mt-4 text-lg font-semibold tracking-[-0.015em] text-fg md:mt-6 md:text-xl">{item.title}</h3>
+      <p className="mt-2.5 flex-1 text-[14.5px] leading-relaxed text-fg-2 md:mt-3 md:text-[15px]">{item.description}</p>
 
-      <ul className="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
+      <ul className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4 md:mt-6 md:pt-5">
         {item.checks.map((c) => (
           <li
             key={c}
@@ -97,7 +97,7 @@ function PinnedTrack({ items, header }: { items: GuardrailItem[]; header: ReactN
 
   return (
     <div ref={sectionRef} className="relative" style={{ height: height ?? "300vh" }}>
-      <div className="sticky top-0 flex h-[100svh] flex-col justify-center overflow-hidden pb-6 pt-20 md:h-screen md:py-16">
+      <div className="sticky top-0 flex min-h-[100svh] flex-col justify-center overflow-x-clip pb-8 pt-20 md:min-h-screen md:py-16">
         <div className="mx-auto flex w-full max-w-7xl items-end justify-between gap-4 px-5 md:gap-10 md:px-8">
           {header}
           <p className="shrink-0 pb-1 font-mono text-[12.5px] text-fg-3 md:pb-2 md:text-[13px]" aria-live="polite">
