@@ -30,6 +30,7 @@ function probeWebGL(): boolean {
 export function HeroBell() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -39,8 +40,6 @@ export function HeroBell() {
     let scene: BellScene | null = null;
     let booting = false;
     let cancelled = false;
-    let timer = 0;
-    let idle = 0;
     let resizeTimer = 0;
     let webglKnown: boolean | null = null;
 
@@ -57,10 +56,12 @@ export function HeroBell() {
     const announce = (active: boolean) => window.dispatchEvent(new CustomEvent(BELL_3D_EVENT, { detail: active }));
 
     const teardown = () => {
-      if (!scene) return;
-      scene.dispose();
-      scene = null;
+      if (scene) {
+        scene.dispose();
+        scene = null;
+      }
       setReady(false);
+      setShowFallback(getMode() === "off");
       announce(false);
     };
 
@@ -74,8 +75,13 @@ export function HeroBell() {
 
     const boot = async () => {
       const mode = getMode();
-      if (booting || scene || mode === "off") return;
+      if (mode === "off") {
+        setShowFallback(true);
+        return;
+      }
+      if (booting || scene) return;
       booting = true;
+      setShowFallback(false);
       try {
         const [{ BellScene }, svgText] = await Promise.all([
           import("@/components/three/bell-scene"),
@@ -84,15 +90,22 @@ export function HeroBell() {
             return res.text();
           }),
         ]);
-        if (cancelled || getMode() === "off") return;
+        if (cancelled || getMode() === "off") {
+          setShowFallback(true);
+          return;
+        }
         scene = new BellScene(canvas, svgText, { lite: mode === "lite" });
-        scene.onContextLost = teardown;
+        scene.onContextLost = () => {
+          teardown();
+          setShowFallback(true);
+        };
         syncScroll();
         scene.start();
         setReady(true);
         announce(true);
       } catch {
         teardown();
+        setShowFallback(true);
       } finally {
         booting = false;
       }
@@ -128,18 +141,11 @@ export function HeroBell() {
     window.addEventListener("resize", onResize);
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Khởi động ngay sau khi trình duyệt vẽ xong khung đầu tiên
-    if (typeof window.requestIdleCallback === "function") {
-      idle = window.requestIdleCallback(() => void boot(), { timeout: 250 });
-    } else {
-      timer = window.setTimeout(() => void boot(), 50);
-    }
+    void boot();
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
       window.clearTimeout(resizeTimer);
-      if (idle && "cancelIdleCallback" in window) window.cancelIdleCallback(idle);
       io.disconnect();
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("scroll", syncScroll);
@@ -159,16 +165,16 @@ export function HeroBell() {
         height={538}
         unoptimized
         className={cn(
-          "relative h-full w-full object-contain opacity-90 transition-opacity duration-700",
-          ready && "opacity-0",
+          "relative h-full w-full object-contain opacity-0 transition-opacity duration-500",
+          showFallback && !ready && "opacity-90",
         )}
       />
       <canvas
         ref={canvasRef}
         data-bell
         className={cn(
-          "pointer-events-none absolute -inset-20 h-[calc(100%+10rem)] w-[calc(100%+10rem)] opacity-0 transition-opacity duration-700",
-          ready && "opacity-100",
+          "pointer-events-none absolute -inset-20 h-[calc(100%+10rem)] w-[calc(100%+10rem)] scale-95 opacity-0 transition-all duration-700 ease-out",
+          ready && "scale-100 opacity-100",
         )}
       />
     </div>
