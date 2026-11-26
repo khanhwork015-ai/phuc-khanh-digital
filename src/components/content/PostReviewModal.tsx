@@ -104,15 +104,15 @@ export function PostReviewModal({
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line-strong bg-surface shadow-2xl"
       >
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
-          <div className="min-w-0">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               {code && <span className="font-mono text-xs text-fg-3">{code}</span>}
               <span className="rounded-full border border-line-accent bg-accent-muted px-2.5 py-0.5 text-[11px] font-semibold text-accent">
                 {statusLabel}
               </span>
             </div>
-            <h3 className="mt-0.5 truncate text-sm font-semibold text-fg">{title}</h3>
+            <h3 className="mt-1.5 break-words text-[15px] font-semibold leading-snug text-fg sm:text-base">{title}</h3>
           </div>
           <button
             type="button"
