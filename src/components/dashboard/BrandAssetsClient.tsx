@@ -3,6 +3,7 @@
 import { ExternalLink, FileText, Palette, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { m } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BrandKitSummary } from "@/components/ui/BrandKitSummary";
 import { ColorSwatches } from "@/components/ui/ColorSwatches";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SelectDropdown } from "@/components/ui/SelectDropdown";
@@ -16,7 +17,16 @@ type BrandAssetRow = {
   title: string;
   assetType: BrandAssetType;
   fileUrl: string | null;
-  metadata: { source?: string; relativePath?: string; content?: string | null; colors?: string[] } | null;
+  metadata: {
+    source?: string;
+    relativePath?: string;
+    content?: string | null;
+    colors?: string[];
+    hotline?: string | null;
+    address?: string | null;
+    tone?: string | null;
+    style?: string | null;
+  } | null;
   updatedAt: string;
   customerName: string;
   customerSlug: string | null;
@@ -26,6 +36,7 @@ type CustomerOption = {
   id: string;
   code: string;
   businessName: string;
+  phone?: string;
 };
 
 const assetTypeLabel: Record<BrandAssetType, string> = {
@@ -50,6 +61,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
   const [newUrl, setNewUrl] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newColorsText, setNewColorsText] = useState("");
+  const [newHotline, setNewHotline] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [newTone, setNewTone] = useState("");
+  const [newStyle, setNewStyle] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   const [confirmState, setConfirmState] = useState<{
@@ -88,14 +103,41 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
     [assets, customerFilter],
   );
 
+  const selectedCustomer = useMemo(
+    () => (customerFilter === "all" ? null : customers.find((c) => c.id === customerFilter) ?? null),
+    [customers, customerFilter],
+  );
+
+  const selectedBrandSummary = useMemo(() => {
+    if (!selectedCustomer) return null;
+    const customerAssets = assets.filter((a) => a.customerId === selectedCustomer.id);
+    const logoAsset = customerAssets.find((a) => a.assetType === "image" && a.fileUrl);
+    const allColors = Array.from(new Set(customerAssets.flatMap((a) => a.metadata?.colors ?? [])));
+    return {
+      brandName: selectedCustomer.businessName,
+      logoUrl: logoAsset?.fileUrl ?? null,
+      hotline:
+        customerAssets.find((a) => a.metadata?.hotline)?.metadata?.hotline ??
+        (selectedCustomer.phone && selectedCustomer.phone !== "Chưa cập nhật" ? selectedCustomer.phone : null),
+      address: customerAssets.find((a) => a.metadata?.address)?.metadata?.address ?? null,
+      tone: customerAssets.find((a) => a.metadata?.tone)?.metadata?.tone ?? null,
+      style: customerAssets.find((a) => a.metadata?.style)?.metadata?.style ?? null,
+      colors: allColors,
+    };
+  }, [selectedCustomer, assets]);
+
   function openCreateForm() {
     setEditingAsset(null);
-    setNewCustomerId("");
+    setNewCustomerId(customerFilter !== "all" ? customerFilter : "");
     setNewTitle("");
     setNewType("guideline");
     setNewUrl("");
     setNewContent("");
     setNewColorsText("");
+    setNewHotline("");
+    setNewAddress("");
+    setNewTone("");
+    setNewStyle("");
     setFormError(null);
     setFormMode("create");
   }
@@ -108,6 +150,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
     setNewUrl(asset.fileUrl ?? "");
     setNewContent(asset.metadata?.content ?? "");
     setNewColorsText((asset.metadata?.colors ?? []).join(", "));
+    setNewHotline(asset.metadata?.hotline ?? "");
+    setNewAddress(asset.metadata?.address ?? "");
+    setNewTone(asset.metadata?.tone ?? "");
+    setNewStyle(asset.metadata?.style ?? "");
     setFormError(null);
     setFormMode("edit");
   }
@@ -143,6 +189,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
               fileUrl: newUrl.trim(),
               content: newContent.trim(),
               colorsText: newColorsText.trim(),
+              hotline: newHotline.trim(),
+              address: newAddress.trim(),
+              tone: newTone.trim(),
+              style: newStyle.trim(),
             }),
           });
           const data = (await res.json()) as { ok?: boolean; message?: string };
@@ -178,6 +228,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
             fileUrl: newUrl.trim(),
             content: newContent.trim(),
             colorsText: newColorsText.trim(),
+            hotline: newHotline.trim(),
+            address: newAddress.trim(),
+            tone: newTone.trim(),
+            style: newStyle.trim(),
           }),
         });
         const data = (await res.json()) as { ok?: boolean; message?: string };
@@ -219,7 +273,7 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent">Thư viện thương hiệu</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-fg">Bộ nhận diện thương hiệu</h1>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-fg">Brand Kit</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -299,6 +353,18 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
           ]}
         />
       </div>
+
+      {selectedBrandSummary && (
+        <BrandKitSummary
+          brandName={selectedBrandSummary.brandName}
+          logoUrl={selectedBrandSummary.logoUrl}
+          hotline={selectedBrandSummary.hotline}
+          address={selectedBrandSummary.address}
+          tone={selectedBrandSummary.tone}
+          style={selectedBrandSummary.style}
+          colors={selectedBrandSummary.colors}
+        />
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -479,6 +545,44 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
                   placeholder="https://... hoặc /api/local-media?path=..."
                   className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
                 />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Số điện thoại / Hotline</label>
+                  <input
+                    value={newHotline}
+                    onChange={(e) => setNewHotline(e.target.value)}
+                    placeholder="VD: 0909 123 456"
+                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Địa chỉ</label>
+                  <input
+                    value={newAddress}
+                    onChange={(e) => setNewAddress(e.target.value)}
+                    placeholder="VD: Quận 1, TP.HCM"
+                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Giọng văn</label>
+                  <input
+                    value={newTone}
+                    onChange={(e) => setNewTone(e.target.value)}
+                    placeholder="VD: Gần gũi, chuyên nghiệp, thực tế"
+                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Phong cách</label>
+                  <input
+                    value={newStyle}
+                    onChange={(e) => setNewStyle(e.target.value)}
+                    placeholder="VD: Tối giản, sang trọng, hiện đại"
+                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                  />
+                </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Mã màu thương hiệu (VD: #E9BE57, #09090B)</label>

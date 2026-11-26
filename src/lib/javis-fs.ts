@@ -178,6 +178,32 @@ export function extractHexColors(text: string | null | undefined): string[] {
   return Array.from(unique);
 }
 
+function pickMarkdownField(text: string, patterns: RegExp[]): string | null {
+  for (const line of text.split(/\r?\n/)) {
+    const clean = line.replace(/^[-*>\s]+/, "").trim();
+    for (const pat of patterns) {
+      const m = clean.match(pat);
+      if (m?.[1]) {
+        const val = m[1].replace(/\*\*/g, "").trim();
+        if (val && val !== "-") return val;
+      }
+    }
+  }
+  return null;
+}
+
+export function parseBrandProfileFields(text: string | null | undefined) {
+  if (!text) return { hotline: null, address: null, tone: null, style: null };
+  return {
+    hotline: pickMarkdownField(text, [
+      /^(?:hotline|sđt|điện thoại|số điện thoại)\s*[:：]\s*(.+)$/i,
+    ]),
+    address: pickMarkdownField(text, [/^(?:địa chỉ|address)\s*[:：]\s*(.+)$/i]),
+    tone: pickMarkdownField(text, [/^(?:giọng văn|tone(?:\s+of\s+voice)?)\s*[:：]\s*(.+)$/i]),
+    style: pickMarkdownField(text, [/^(?:phong cách|style|visual)\s*[:：]\s*(.+)$/i]),
+  };
+}
+
 function syncBrandAssetsFromJavis(
   db: ReturnType<typeof getSqliteDb>,
   fanpagesDir: string,
@@ -231,11 +257,13 @@ function syncBrandAssetsFromJavis(
         const assetType = ext === ".pdf" ? "pdf" : ext === ".md" ? "guideline" : "image";
         const contentText = ext === ".md" ? readFileSync(fullPath, "utf8").slice(0, 8000) : null;
         const colors = extractHexColors(contentText);
+        const profileFields = parseBrandProfileFields(contentText);
         const metadataJson = JSON.stringify({
           source: "javis",
           relativePath: relFromClient,
           content: contentText,
           colors,
+          ...profileFields,
         });
 
         const existing = db

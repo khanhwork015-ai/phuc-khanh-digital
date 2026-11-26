@@ -11,6 +11,10 @@ const updateBrandAssetSchema = z.object({
   fileUrl: z.string().trim().max(500).optional().or(z.literal("")),
   content: z.string().trim().max(8000).optional().or(z.literal("")),
   colorsText: z.string().trim().max(500).optional().or(z.literal("")),
+  hotline: z.string().trim().max(100).optional().or(z.literal("")),
+  address: z.string().trim().max(300).optional().or(z.literal("")),
+  tone: z.string().trim().max(300).optional().or(z.literal("")),
+  style: z.string().trim().max(300).optional().or(z.literal("")),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -61,6 +65,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     ...prevMeta,
     content: nextContent,
     colors: nextColors,
+    hotline: parsed.data.hotline !== undefined ? parsed.data.hotline || null : prevMeta.hotline ?? null,
+    address: parsed.data.address !== undefined ? parsed.data.address || null : prevMeta.address ?? null,
+    tone: parsed.data.tone !== undefined ? parsed.data.tone || null : prevMeta.tone ?? null,
+    style: parsed.data.style !== undefined ? parsed.data.style || null : prevMeta.style ?? null,
   });
 
   const now = new Date().toISOString();
