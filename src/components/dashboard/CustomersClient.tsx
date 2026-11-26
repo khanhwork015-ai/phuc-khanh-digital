@@ -4,6 +4,7 @@ import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog, type ConfirmChangeItem } from "@/components/ui/ConfirmDialog";
+import { SelectDropdown } from "@/components/ui/SelectDropdown";
 import { leadPlanLabels, leadPlanValues, type LeadPlanValue } from "@/lib/lead-fields";
 import { easeOutExpo } from "@/lib/theme";
 
@@ -382,31 +383,25 @@ export function CustomersClient({ canEdit = false }: { canEdit?: boolean }) {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Gói dịch vụ</label>
-                <select
+                <SelectDropdown
+                  ariaLabel="Chọn gói dịch vụ"
                   value={form.plan}
-                  onChange={(e) => setForm({ ...form, plan: e.target.value as LeadPlanValue })}
-                  className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
-                >
-                  {leadPlanValues.map((p) => (
-                    <option key={p} value={p}>
-                      {leadPlanLabels[p]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setForm({ ...form, plan: val as LeadPlanValue })}
+                  options={leadPlanValues.map((p) => ({ value: p, label: leadPlanLabels[p] }))}
+                />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Trạng thái hợp đồng</label>
-                <select
+                <SelectDropdown
+                  ariaLabel="Chọn trạng thái hợp đồng"
                   value={form.contractStatus}
-                  onChange={(e) =>
-                    setForm({ ...form, contractStatus: e.target.value as CustomerRow["contractStatus"] })
-                  }
-                  className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
-                >
-                  <option value="active">Đang vận hành</option>
-                  <option value="paused">Tạm dừng</option>
-                  <option value="completed">Đã hoàn thành</option>
-                </select>
+                  onChange={(val) => setForm({ ...form, contractStatus: val as CustomerRow["contractStatus"] })}
+                  options={[
+                    { value: "active", label: "Đang vận hành" },
+                    { value: "paused", label: "Tạm dừng" },
+                    { value: "completed", label: "Đã hoàn thành" },
+                  ]}
+                />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Phí hàng tháng (VNĐ)</label>
