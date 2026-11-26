@@ -1,35 +1,11 @@
 import { NextResponse } from "next/server";
+import { getDb } from "@/db";
+import { leads } from "@/db/schema";
 import { leadPlanLabels, type LeadFormValues } from "@/lib/lead-fields";
 import { leadSchema } from "@/lib/lead-schema";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 
-const RATE_WINDOW_MS = 10 * 60 * 1000;
-const RATE_MAX_REQUESTS = 5;
-const ipHits = new Map<string, number[]>();
-
-function getClientIp(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return req.headers.get("x-real-ip")?.trim() || "unknown";
-}
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  // Dọn IP hết hạn để map không phình mãi trên instance chạy lâu
-  if (ipHits.size > 5000) {
-    for (const [key, hits] of ipHits) {
-      if (hits.every((ts) => now - ts >= RATE_WINDOW_MS)) ipHits.delete(key);
-    }
-  }
-  const prev = ipHits.get(ip) ?? [];
-  const fresh = prev.filter((ts) => now - ts < RATE_WINDOW_MS);
-  if (fresh.length >= RATE_MAX_REQUESTS) {
-    ipHits.set(ip, fresh);
-    return true;
-  }
-  fresh.push(now);
-  ipHits.set(ip, fresh);
-  return false;
-}
+const isRateLimited = createRateLimiter(10 * 60 * 1000, 5);
 
 async function postJsonWithTimeout(url: string, body: unknown, timeoutMs = 5000) {
   const controller = new AbortController();
@@ -135,19 +111,35 @@ export async function POST(req: Request) {
     );
   }
 
+  let savedToDb = false;
+  if (process.env.DATABASE_URL) {
+    try {
+      const db = getDb();
+      await db.insert(leads).values({
+        fullName: parsed.data.fullName,
+        phone: parsed.data.phone,
+        fanpageUrl: parsed.data.fanpageUrl,
+        plan: parsed.data.plan,
+        status: "new",
+      });
+      savedToDb = true;
+    } catch (err) {
+      console.error("[leads] Lỗi lưu lead vào database:", err);
+    }
+  }
+
   const { configured, delivered } = await dispatchNotifications(parsed.data);
 
-  if (configured === 0) {
-    // Chưa cấu hình kênh nhận lead: dev vẫn cho qua để test giao diện, production báo lỗi để không mất lead.
-    console.warn("[leads] Chưa cấu hình TELEGRAM_* hoặc *_WEBHOOK_URL, lead không được chuyển đi.");
+  if (!savedToDb && configured === 0) {
+    console.warn("[leads] Chưa cấu hình DATABASE_URL và kênh nhận thông báo.");
     if (process.env.NODE_ENV === "production") {
       return NextResponse.json(
         { ok: false, message: "Hệ thống nhận đăng ký đang bảo trì. Bạn nhắn Zalo trực tiếp giúp đội ngũ nhé." },
         { status: 503 },
       );
     }
-  } else if (delivered === 0) {
-    console.error(`[leads] Gửi lead thất bại ở cả ${configured} kênh.`);
+  } else if (!savedToDb && delivered === 0) {
+    console.error(`[leads] Gửi lead thất bại ở cả ${configured} kênh và chưa lưu được DB.`);
     return NextResponse.json(
       { ok: false, message: "Chưa gửi được thông tin lúc này. Bạn thử lại sau ít phút hoặc nhắn Zalo trực tiếp nhé." },
       { status: 502 },
