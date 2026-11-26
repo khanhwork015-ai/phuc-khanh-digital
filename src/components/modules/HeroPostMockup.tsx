@@ -10,14 +10,27 @@ import { cn } from "@/lib/utils";
 
 const STAGE_MS = 2600;
 
+function pickNextDifferentBrandIndex(currentIdx: number): number {
+  const total = heroMockPosts.length;
+  if (total <= 1) return 0;
+  const currentBrand = heroMockPosts[currentIdx]?.brandId;
+  for (let offset = 1; offset < total; offset++) {
+    const candidate = (currentIdx + offset) % total;
+    if (heroMockPosts[candidate]?.brandId !== currentBrand) {
+      return candidate;
+    }
+  }
+  return (currentIdx + 1) % total;
+}
+
 export function HeroPostMockup() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { margin: "-40px" });
   const reduce = useReducedMotion();
-  const [postIndex, setPostIndex] = useState(0);
-  const [stage, setStage] = useState(0);
+  const [cursor, setCursor] = useState({ postIndex: 0, stage: 0 });
   const stages = heroMockPost.stages;
-  const post = heroMockPosts[postIndex] ?? heroMockPosts[0];
+  const post = heroMockPosts[cursor.postIndex] ?? heroMockPosts[0];
+  const stage = cursor.stage;
   const current = stages[stage].key;
 
   useEffect(() => {
@@ -31,17 +44,18 @@ export function HeroPostMockup() {
     });
     if (brandStartIndices.length > 1) {
       const picked = brandStartIndices[Math.floor(Math.random() * brandStartIndices.length)];
-      setPostIndex(picked);
+      setCursor({ postIndex: picked, stage: 0 });
     }
   }, []);
 
   useEffect(() => {
     if (!inView) return;
     const id = window.setInterval(() => {
-      setStage((s) => {
-        if (s + 1 < stages.length) return s + 1;
-        setPostIndex((idx) => (idx + 1) % heroMockPosts.length);
-        return 0;
+      setCursor((prev) => {
+        if (prev.stage + 1 < stages.length) {
+          return { postIndex: prev.postIndex, stage: prev.stage + 1 };
+        }
+        return { postIndex: pickNextDifferentBrandIndex(prev.postIndex), stage: 0 };
       });
     }, STAGE_MS);
     return () => window.clearInterval(id);
@@ -108,7 +122,7 @@ export function HeroPostMockup() {
             </span>
           </header>
 
-          <Caption text={post.caption} typing={current === "writing" && !reduce} />
+          <Caption key={post.id} text={post.caption} typing={current === "writing" && !reduce} />
 
           {/* Ảnh */}
           <div className="relative mt-3 aspect-[4/3] overflow-hidden border-y border-line bg-elevated">
