@@ -14,8 +14,10 @@ const createBrandAssetSchema = z.object({
   colorsText: z.string().trim().max(500).optional().or(z.literal("")),
   hotline: z.string().trim().max(100).optional().or(z.literal("")),
   address: z.string().trim().max(300).optional().or(z.literal("")),
+  pronouns: z.string().trim().max(200).optional().or(z.literal("")),
   tone: z.string().trim().max(300).optional().or(z.literal("")),
   style: z.string().trim().max(300).optional().or(z.literal("")),
+  avoidWordsText: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
 export async function GET() {
@@ -90,14 +92,20 @@ export async function POST(req: Request) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const colors = extractHexColors(`${parsed.data.colorsText ?? ""} ${parsed.data.content ?? ""}`);
+  const avoidWords = (parsed.data.avoidWordsText ?? "")
+    .split(/[,;]+/)
+    .map((w) => w.trim())
+    .filter(Boolean);
   const metadataJson = JSON.stringify({
     source: "manual",
     content: parsed.data.content || null,
     colors,
     hotline: parsed.data.hotline || null,
     address: parsed.data.address || null,
+    pronouns: parsed.data.pronouns || null,
     tone: parsed.data.tone || null,
     style: parsed.data.style || null,
+    avoidWords,
   });
 
   db.prepare(

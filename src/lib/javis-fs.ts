@@ -193,14 +193,35 @@ function pickMarkdownField(text: string, patterns: RegExp[]): string | null {
 }
 
 export function parseBrandProfileFields(text: string | null | undefined) {
-  if (!text) return { hotline: null, address: null, tone: null, style: null };
+  if (!text) {
+    return {
+      hotline: null,
+      address: null,
+      pronouns: null,
+      tone: null,
+      style: null,
+      avoidWords: [] as string[],
+      pricingLines: [] as Array<{ name: string; price: string }>,
+    };
+  }
+  const avoidRaw = pickMarkdownField(text, [/^(?:từ cần tránh|từ cấm|tránh dùng)\s*[:：]\s*(.+)$/i]);
+  const avoidWords = avoidRaw
+    ? avoidRaw
+        .split(/[,;]+/)
+        .map((w) => w.trim())
+        .filter(Boolean)
+    : [];
+
   return {
     hotline: pickMarkdownField(text, [
       /^(?:hotline|sđt|điện thoại|số điện thoại)\s*[:：]\s*(.+)$/i,
     ]),
     address: pickMarkdownField(text, [/^(?:địa chỉ|address)\s*[:：]\s*(.+)$/i]),
+    pronouns: pickMarkdownField(text, [/^(?:xưng hô|cách xưng hô)\s*[:：]\s*(.+)$/i]),
     tone: pickMarkdownField(text, [/^(?:giọng văn|tone(?:\s+of\s+voice)?)\s*[:：]\s*(.+)$/i]),
     style: pickMarkdownField(text, [/^(?:phong cách|style|visual)\s*[:：]\s*(.+)$/i]),
+    avoidWords,
+    pricingLines: [] as Array<{ name: string; price: string }>,
   };
 }
 

@@ -34,8 +34,10 @@ type PortalOverview = {
       colors?: string[];
       hotline?: string | null;
       address?: string | null;
+      pronouns?: string | null;
       tone?: string | null;
       style?: string | null;
+      avoidWords?: string[];
     } | null;
     updatedAt: string;
   }>;
@@ -316,15 +318,19 @@ export function PortalClient({ username }: { username: string }) {
               <div className="space-y-5">
                 <BrandKitSummary
                   brandName={data.customer.businessName}
+                  brandCode={data.customer.code}
                   logoUrl={
                     data.brandAssets.find((a) => a.assetType === "image" && a.fileUrl)?.fileUrl ??
                     data.contentItems.find((i) => i.logoUrl)?.logoUrl ??
                     null
                   }
+                  logoLabel={data.brandAssets.find((a) => a.assetType === "image" && a.fileUrl)?.title ?? null}
                   hotline={data.brandAssets.find((a) => a.metadata?.hotline)?.metadata?.hotline ?? null}
                   address={data.brandAssets.find((a) => a.metadata?.address)?.metadata?.address ?? null}
+                  pronouns={data.brandAssets.find((a) => a.metadata?.pronouns)?.metadata?.pronouns ?? null}
                   tone={data.brandAssets.find((a) => a.metadata?.tone)?.metadata?.tone ?? null}
                   style={data.brandAssets.find((a) => a.metadata?.style)?.metadata?.style ?? null}
+                  avoidWords={Array.from(new Set(data.brandAssets.flatMap((a) => a.metadata?.avoidWords ?? [])))}
                   colors={Array.from(new Set(data.brandAssets.flatMap((a) => a.metadata?.colors ?? [])))}
                 />
 

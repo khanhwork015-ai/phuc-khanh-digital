@@ -24,8 +24,10 @@ type BrandAssetRow = {
     colors?: string[];
     hotline?: string | null;
     address?: string | null;
+    pronouns?: string | null;
     tone?: string | null;
     style?: string | null;
+    avoidWords?: string[];
   } | null;
   updatedAt: string;
   customerName: string;
@@ -63,8 +65,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
   const [newColorsText, setNewColorsText] = useState("");
   const [newHotline, setNewHotline] = useState("");
   const [newAddress, setNewAddress] = useState("");
+  const [newPronouns, setNewPronouns] = useState("");
   const [newTone, setNewTone] = useState("");
   const [newStyle, setNewStyle] = useState("");
+  const [newAvoidWordsText, setNewAvoidWordsText] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   const [confirmState, setConfirmState] = useState<{
@@ -115,13 +119,17 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
     const allColors = Array.from(new Set(customerAssets.flatMap((a) => a.metadata?.colors ?? [])));
     return {
       brandName: selectedCustomer.businessName,
+      brandCode: selectedCustomer.code,
       logoUrl: logoAsset?.fileUrl ?? null,
+      logoLabel: logoAsset?.title ?? null,
       hotline:
         customerAssets.find((a) => a.metadata?.hotline)?.metadata?.hotline ??
         (selectedCustomer.phone && selectedCustomer.phone !== "Chưa cập nhật" ? selectedCustomer.phone : null),
       address: customerAssets.find((a) => a.metadata?.address)?.metadata?.address ?? null,
+      pronouns: customerAssets.find((a) => a.metadata?.pronouns)?.metadata?.pronouns ?? null,
       tone: customerAssets.find((a) => a.metadata?.tone)?.metadata?.tone ?? null,
       style: customerAssets.find((a) => a.metadata?.style)?.metadata?.style ?? null,
+      avoidWords: Array.from(new Set(customerAssets.flatMap((a) => a.metadata?.avoidWords ?? []))),
       colors: allColors,
     };
   }, [selectedCustomer, assets]);
@@ -136,8 +144,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
     setNewColorsText("");
     setNewHotline("");
     setNewAddress("");
+    setNewPronouns("");
     setNewTone("");
     setNewStyle("");
+    setNewAvoidWordsText("");
     setFormError(null);
     setFormMode("create");
   }
@@ -152,8 +162,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
     setNewColorsText((asset.metadata?.colors ?? []).join(", "));
     setNewHotline(asset.metadata?.hotline ?? "");
     setNewAddress(asset.metadata?.address ?? "");
+    setNewPronouns(asset.metadata?.pronouns ?? "");
     setNewTone(asset.metadata?.tone ?? "");
     setNewStyle(asset.metadata?.style ?? "");
+    setNewAvoidWordsText((asset.metadata?.avoidWords ?? []).join(", "));
     setFormError(null);
     setFormMode("edit");
   }
@@ -191,8 +203,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
               colorsText: newColorsText.trim(),
               hotline: newHotline.trim(),
               address: newAddress.trim(),
+              pronouns: newPronouns.trim(),
               tone: newTone.trim(),
               style: newStyle.trim(),
+              avoidWordsText: newAvoidWordsText.trim(),
             }),
           });
           const data = (await res.json()) as { ok?: boolean; message?: string };
@@ -230,8 +244,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
             colorsText: newColorsText.trim(),
             hotline: newHotline.trim(),
             address: newAddress.trim(),
+            pronouns: newPronouns.trim(),
             tone: newTone.trim(),
             style: newStyle.trim(),
+            avoidWordsText: newAvoidWordsText.trim(),
           }),
         });
         const data = (await res.json()) as { ok?: boolean; message?: string };
@@ -357,11 +373,15 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
       {selectedBrandSummary && (
         <BrandKitSummary
           brandName={selectedBrandSummary.brandName}
+          brandCode={selectedBrandSummary.brandCode}
           logoUrl={selectedBrandSummary.logoUrl}
+          logoLabel={selectedBrandSummary.logoLabel}
           hotline={selectedBrandSummary.hotline}
           address={selectedBrandSummary.address}
+          pronouns={selectedBrandSummary.pronouns}
           tone={selectedBrandSummary.tone}
           style={selectedBrandSummary.style}
+          avoidWords={selectedBrandSummary.avoidWords}
           colors={selectedBrandSummary.colors}
         />
       )}
@@ -580,6 +600,24 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
                     value={newStyle}
                     onChange={(e) => setNewStyle(e.target.value)}
                     placeholder="VD: Tối giản, sang trọng, hiện đại"
+                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Xưng hô</label>
+                  <input
+                    value={newPronouns}
+                    onChange={(e) => setNewPronouns(e.target.value)}
+                    placeholder='VD: Gọi mình là "tiệm", khách là "bạn"'
+                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Từ cần tránh (cách nhau dấu phẩy)</label>
+                  <input
+                    value={newAvoidWordsText}
+                    onChange={(e) => setNewAvoidWordsText(e.target.value)}
+                    placeholder="VD: rẻ nhất, cam kết 100%, siêu phẩm"
                     className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
                   />
                 </div>

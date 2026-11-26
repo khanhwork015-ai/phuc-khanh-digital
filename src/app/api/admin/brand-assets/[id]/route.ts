@@ -13,8 +13,10 @@ const updateBrandAssetSchema = z.object({
   colorsText: z.string().trim().max(500).optional().or(z.literal("")),
   hotline: z.string().trim().max(100).optional().or(z.literal("")),
   address: z.string().trim().max(300).optional().or(z.literal("")),
+  pronouns: z.string().trim().max(200).optional().or(z.literal("")),
   tone: z.string().trim().max(300).optional().or(z.literal("")),
   style: z.string().trim().max(300).optional().or(z.literal("")),
+  avoidWordsText: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -61,14 +63,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ? extractHexColors(`${parsed.data.colorsText ?? ""} ${nextContent ?? ""}`)
       : ((prevMeta.colors as string[] | undefined) ?? []);
 
+  const nextAvoidWords =
+    parsed.data.avoidWordsText !== undefined
+      ? parsed.data.avoidWordsText
+          .split(/[,;]+/)
+          .map((w) => w.trim())
+          .filter(Boolean)
+      : ((prevMeta.avoidWords as string[] | undefined) ?? []);
+
   const nextMeta = JSON.stringify({
     ...prevMeta,
     content: nextContent,
     colors: nextColors,
     hotline: parsed.data.hotline !== undefined ? parsed.data.hotline || null : prevMeta.hotline ?? null,
     address: parsed.data.address !== undefined ? parsed.data.address || null : prevMeta.address ?? null,
+    pronouns: parsed.data.pronouns !== undefined ? parsed.data.pronouns || null : prevMeta.pronouns ?? null,
     tone: parsed.data.tone !== undefined ? parsed.data.tone || null : prevMeta.tone ?? null,
     style: parsed.data.style !== undefined ? parsed.data.style || null : prevMeta.style ?? null,
+    avoidWords: nextAvoidWords,
   });
 
   const now = new Date().toISOString();
