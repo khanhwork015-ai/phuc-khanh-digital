@@ -37,10 +37,10 @@ export const heroMockPost = {
 } as const;
 
 export const contactConfig = {
-  phoneDisplay: "0909 123 456",
-  phoneHref: "tel:0909123456",
-  zaloUrl: "https://zalo.me/0909123456",
-  messengerUrl: "https://m.me/phuckhanhdigital",
+  phoneDisplay: "0886 684 778",
+  phoneHref: "tel:0886684778",
+  zaloUrl: "https://zalo.me/0886684778",
+  messengerUrl: "https://m.me/61597044384950",
   email: "phuckhanhdigital@gmail.com",
   workingHours: "Luôn mở cửa",
   address: "177, Ngô Quyền, Phường An Xuyên, TP. Cà Mau",

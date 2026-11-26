@@ -137,12 +137,12 @@ export function LeadCaptureSection() {
             </ol>
           </Reveal>
 
-          <Reveal delay={0.14} className="mt-10 flex flex-wrap gap-3">
+          <Reveal delay={0.14} className="mt-10 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:flex lg:flex-wrap">
             <a
               href={contactConfig.zaloUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-line-strong bg-white/[0.02] px-4 text-[14px] font-medium text-fg transition-[background-color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/30 hover:bg-white/[0.05]"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-line-strong bg-white/[0.02] px-4 text-[14px] font-medium text-fg transition-[background-color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/30 hover:bg-white/[0.05] lg:h-11 lg:w-auto lg:justify-start"
             >
               <MessageCircle size={16} strokeWidth={1.5} className="text-accent" aria-hidden />
               Nhắn Zalo ngay
@@ -150,9 +150,9 @@ export function LeadCaptureSection() {
             </a>
             <a
               href={contactConfig.phoneHref}
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface/60 px-4 text-[14px] font-medium text-fg-2 transition-colors duration-200 hover:border-line-strong hover:text-fg"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-line-strong bg-white/[0.02] px-4 font-mono text-[14px] font-medium text-fg transition-[background-color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/30 hover:bg-white/[0.05] lg:h-11 lg:w-auto lg:justify-start"
             >
-              <Phone size={15} strokeWidth={1.5} aria-hidden />
+              <Phone size={16} strokeWidth={1.5} className="text-accent" aria-hidden />
               {contactConfig.phoneDisplay}
             </a>
           </Reveal>
@@ -177,12 +177,12 @@ export function LeadCaptureSection() {
 
                 <div className="mt-8 space-y-4 border-t border-line pt-6">
                   <p className="text-[13.5px] text-fg-3">Cần trao đổi gấp, bạn có thể nhắn trực tiếp:</p>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:flex lg:flex-wrap">
                     <a
                       href={contactConfig.zaloUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-11 items-center gap-2 rounded-xl bg-accent px-5 text-[14.5px] font-semibold text-canvas transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-accent-hover"
+                      className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-accent px-5 text-[14.5px] font-semibold text-canvas transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-accent-hover"
                     >
                       Nhắn Zalo trực tiếp
                       <ArrowUpRight size={15} strokeWidth={1.75} aria-hidden />
@@ -191,7 +191,7 @@ export function LeadCaptureSection() {
                       href={contactConfig.messengerUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-11 items-center gap-2 rounded-xl border border-line-strong px-5 text-[14.5px] font-medium text-fg transition-colors hover:border-white/30 hover:bg-white/[0.04]"
+                      className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-line-strong px-5 text-[14.5px] font-medium text-fg transition-colors hover:border-white/30 hover:bg-white/[0.04]"
                     >
                       Nhắn Messenger
                       <ArrowUpRight size={15} strokeWidth={1.5} aria-hidden />
@@ -202,7 +202,7 @@ export function LeadCaptureSection() {
                         setSubmitted(null);
                         reset();
                       }}
-                      className="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-[13.5px] text-fg-3 transition-colors hover:text-fg"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-[13.5px] text-fg-3 min-[400px]:col-span-2 transition-colors hover:text-fg"
                     >
                       <RotateCcw size={14} strokeWidth={1.5} aria-hidden />
                       Gửi thêm yêu cầu
