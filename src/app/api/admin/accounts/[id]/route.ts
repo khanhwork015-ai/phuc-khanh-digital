@@ -1,7 +1,5 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { sessions, users } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
 import { requireAdminApi } from "@/lib/api-auth";
 import { hashPassword } from "@/lib/auth";
 import { updateAccountSchema } from "@/lib/auth-schema";
@@ -33,37 +31,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  const updateFields: Partial<{ isActive: boolean; passwordHash: string; updatedAt: Date }> = {
-    updatedAt: new Date(),
-  };
+  const db = getSqliteDb();
+  const current = db.prepare("SELECT id, is_active, password_hash FROM users WHERE id = ?").get(id) as
+    | { id: string; is_active: number; password_hash: string }
+    | undefined;
 
-  if (typeof parsed.data.isActive === "boolean") {
-    updateFields.isActive = parsed.data.isActive;
-  }
-  if (parsed.data.newPassword) {
-    updateFields.passwordHash = hashPassword(parsed.data.newPassword);
-  }
-
-  const db = getDb();
-  const [updated] = await db
-    .update(users)
-    .set(updateFields)
-    .where(eq(users.id, id))
-    .returning({
-      id: users.id,
-      username: users.username,
-      role: users.role,
-      isActive: users.isActive,
-      customerId: users.customerId,
-    });
-
-  if (!updated) {
+  if (!current) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy tài khoản." }, { status: 404 });
   }
 
+  const nextActive = typeof parsed.data.isActive === "boolean" ? (parsed.data.isActive ? 1 : 0) : current.is_active;
+  const nextHash = parsed.data.newPassword ? hashPassword(parsed.data.newPassword) : current.password_hash;
+  const now = new Date().toISOString();
+
+  db.prepare("UPDATE users SET is_active = ?, password_hash = ?, updated_at = ? WHERE id = ?").run(
+    nextActive,
+    nextHash,
+    now,
+    id,
+  );
+
   if (parsed.data.isActive === false || parsed.data.newPassword) {
-    await db.delete(sessions).where(eq(sessions.userId, id));
+    db.prepare("DELETE FROM sessions WHERE user_id = ?").run(id);
   }
 
-  return NextResponse.json({ ok: true, account: updated });
+  return NextResponse.json({
+    ok: true,
+    account: { id, isActive: nextActive === 1 },
+  });
 }

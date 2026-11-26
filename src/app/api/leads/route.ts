@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { leads } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
 import { leadPlanLabels, type LeadFormValues } from "@/lib/lead-fields";
 import { leadSchema } from "@/lib/lead-schema";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
@@ -112,20 +111,24 @@ export async function POST(req: Request) {
   }
 
   let savedToDb = false;
-  if (process.env.DATABASE_URL) {
-    try {
-      const db = getDb();
-      await db.insert(leads).values({
-        fullName: parsed.data.fullName,
-        phone: parsed.data.phone,
-        fanpageUrl: parsed.data.fanpageUrl,
-        plan: parsed.data.plan,
-        status: "new",
-      });
-      savedToDb = true;
-    } catch (err) {
-      console.error("[leads] Lỗi lưu lead vào database:", err);
-    }
+  try {
+    const db = getSqliteDb();
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO leads (id, full_name, phone, fanpage_url, plan, status, synced_to_javis, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'new', 0, ?, ?)`,
+    ).run(
+      crypto.randomUUID(),
+      parsed.data.fullName,
+      parsed.data.phone,
+      parsed.data.fanpageUrl,
+      parsed.data.plan,
+      now,
+      now,
+    );
+    savedToDb = true;
+  } catch (err) {
+    console.error("[leads] Lỗi lưu lead vào SQLite:", err);
   }
 
   const { configured, delivered } = await dispatchNotifications(parsed.data);

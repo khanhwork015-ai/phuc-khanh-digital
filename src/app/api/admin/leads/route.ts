@@ -1,8 +1,20 @@
-import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { leads, leadStatuses, type LeadStatus } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
+import { leadStatuses, type LeadStatus } from "@/db/types";
 import { requireAdminApi } from "@/lib/api-auth";
+
+const selectCols = `
+  id,
+  full_name AS fullName,
+  phone,
+  fanpage_url AS fanpageUrl,
+  plan,
+  status,
+  note,
+  synced_to_javis AS syncedToJavis,
+  converted_customer_id AS convertedCustomerId,
+  created_at AS createdAt
+`;
 
 export async function GET(req: Request) {
   const auth = await requireAdminApi();
@@ -10,16 +22,15 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const statusParam = searchParams.get("status");
-
-  const db = getDb();
   const validStatus =
     statusParam && (leadStatuses as readonly string[]).includes(statusParam)
       ? (statusParam as LeadStatus)
       : null;
 
+  const db = getSqliteDb();
   const rows = validStatus
-    ? await db.select().from(leads).where(eq(leads.status, validStatus)).orderBy(desc(leads.createdAt))
-    : await db.select().from(leads).orderBy(desc(leads.createdAt));
+    ? db.prepare(`SELECT ${selectCols} FROM leads WHERE status = ? ORDER BY created_at DESC`).all(validStatus)
+    : db.prepare(`SELECT ${selectCols} FROM leads ORDER BY created_at DESC`).all();
 
   return NextResponse.json({ ok: true, leads: rows });
 }

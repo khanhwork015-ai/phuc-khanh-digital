@@ -1,9 +1,8 @@
-import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getDb } from "@/db";
-import { contentItems } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
 import { requireSessionApi } from "@/lib/api-auth";
+import { writeApprovalDecisionToJavis } from "@/lib/javis-fs";
 
 const decisionSchema = z
   .object({
@@ -39,20 +38,52 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  const db = getDb();
-  const [updated] = await db
-    .update(contentItems)
-    .set({
-      status: parsed.data.decision,
-      clientFeedback: parsed.data.decision === "changes_requested" ? parsed.data.clientFeedback ?? null : null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(contentItems.id, id), eq(contentItems.customerId, auth.user.customerId)))
-    .returning();
+  const db = getSqliteDb();
+  const existing = db
+    .prepare("SELECT id, javis_item_id AS javisItemId FROM content_items WHERE id = ? AND customer_id = ? LIMIT 1")
+    .get(id, auth.user.customerId) as { id: string; javisItemId: string } | undefined;
 
-  if (!updated) {
+  if (!existing) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy bài viết thuộc tài khoản của bạn." }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, item: updated });
+  const feedback = parsed.data.decision === "changes_requested" ? parsed.data.clientFeedback ?? null : null;
+  const now = new Date().toISOString();
+
+  db.prepare("UPDATE content_items SET status = ?, client_feedback = ?, updated_at = ? WHERE id = ?").run(
+    parsed.data.decision,
+    feedback,
+    now,
+    id,
+  );
+
+  writeApprovalDecisionToJavis(existing.javisItemId, parsed.data.decision, feedback);
+
+  const updated = db
+    .prepare(
+      `SELECT id, title, caption, media_type AS mediaType, media_urls AS mediaUrlsJson,
+              status, client_feedback AS clientFeedback, scheduled_at AS scheduledAt,
+              published_at AS publishedAt, published_url AS publishedUrl
+       FROM content_items WHERE id = ?`,
+    )
+    .get(id) as {
+    id: string;
+    title: string;
+    caption: string;
+    mediaType: string;
+    mediaUrlsJson: string;
+    status: string;
+    clientFeedback: string | null;
+    scheduledAt: string | null;
+    publishedAt: string | null;
+    publishedUrl: string | null;
+  };
+
+  return NextResponse.json({
+    ok: true,
+    item: {
+      ...updated,
+      mediaUrls: JSON.parse(updated.mediaUrlsJson || "[]") as string[],
+    },
+  });
 }

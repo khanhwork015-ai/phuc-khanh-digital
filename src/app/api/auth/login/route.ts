@@ -1,7 +1,6 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { users } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
+import type { UserRole } from "@/db/types";
 import { buildSessionCookieOptions, createSession, verifyPassword } from "@/lib/auth";
 import { loginSchema } from "@/lib/auth-schema";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
@@ -33,45 +32,42 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!process.env.DATABASE_URL) {
-    return NextResponse.json(
-      { ok: false, message: "Hệ thống chưa được cấu hình cơ sở dữ liệu (DATABASE_URL)." },
-      { status: 503 },
-    );
-  }
-
   const { username, password } = parsed.data;
-  const db = getDb();
-  const rows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      passwordHash: users.passwordHash,
-      role: users.role,
-      isActive: users.isActive,
-      customerId: users.customerId,
-    })
-    .from(users)
-    .where(eq(users.username, username))
-    .limit(1);
+  const db = getSqliteDb();
 
-  const user = rows[0];
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  const user = db
+    .prepare(
+      `SELECT id, username, password_hash, role, is_active, customer_id
+       FROM users WHERE username = ? LIMIT 1`,
+    )
+    .get(username) as
+    | {
+        id: string;
+        username: string;
+        password_hash: string;
+        role: UserRole;
+        is_active: number;
+        customer_id: string | null;
+      }
+    | undefined;
+
+  if (!user || !verifyPassword(password, user.password_hash)) {
     return NextResponse.json(
       { ok: false, message: "Tên đăng nhập hoặc mật khẩu không chính xác." },
       { status: 401 },
     );
   }
 
-  if (!user.isActive) {
+  if (user.is_active !== 1) {
     return NextResponse.json(
       { ok: false, message: "Tài khoản này đang bị tạm khóa. Vui lòng liên hệ quản trị viên." },
       { status: 403 },
     );
   }
 
-  const { token, expiresAt } = await createSession(user.id);
-  await db.update(users).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
+  const { token, expiresAt } = createSession(user.id);
+  const now = new Date().toISOString();
+  db.prepare("UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?").run(now, now, user.id);
 
   const redirectTo = user.role === "ADMIN" ? "/dashboard" : "/portal";
   const response = NextResponse.json({
@@ -80,7 +76,7 @@ export async function POST(req: Request) {
       id: user.id,
       username: user.username,
       role: user.role,
-      customerId: user.customerId,
+      customerId: user.customer_id,
     },
     redirectTo,
   });

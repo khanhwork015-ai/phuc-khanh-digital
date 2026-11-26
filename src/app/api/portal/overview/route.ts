@@ -1,8 +1,7 @@
-import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { brandAssets, contentItems, customers } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
 import { requireSessionApi } from "@/lib/api-auth";
+import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 export async function GET() {
   const auth = await requireSessionApi();
@@ -15,37 +14,57 @@ export async function GET() {
     );
   }
 
-  const db = getDb();
-  const [customerRows, assets, items] = await Promise.all([
-    db.select().from(customers).where(eq(customers.id, auth.user.customerId)).limit(1),
-    db
-      .select()
-      .from(brandAssets)
-      .where(eq(brandAssets.customerId, auth.user.customerId))
-      .orderBy(desc(brandAssets.updatedAt)),
-    db
-      .select()
-      .from(contentItems)
-      .where(eq(contentItems.customerId, auth.user.customerId))
-      .orderBy(desc(contentItems.updatedAt)),
-  ]);
+  syncFromJavisLocalDir();
+  const db = getSqliteDb();
 
-  const customer = customerRows[0];
+  const customer = db
+    .prepare(
+      `SELECT code, business_name AS businessName, full_name AS fullName, plan,
+              contract_status AS contractStatus, fanpage_url AS fanpageUrl
+       FROM customers WHERE id = ? LIMIT 1`,
+    )
+    .get(auth.user.customerId);
+
   if (!customer) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy hồ sơ khách hàng." }, { status: 404 });
   }
 
+  const assets = db
+    .prepare(
+      `SELECT id, title, asset_type AS assetType, file_url AS fileUrl, updated_at AS updatedAt
+       FROM brand_assets WHERE customer_id = ? ORDER BY updated_at DESC`,
+    )
+    .all(auth.user.customerId);
+
+  const rawItems = db
+    .prepare(
+      `SELECT id, title, caption, media_type AS mediaType, media_urls AS mediaUrlsJson,
+              status, client_feedback AS clientFeedback, scheduled_at AS scheduledAt,
+              published_at AS publishedAt, published_url AS publishedUrl
+       FROM content_items WHERE customer_id = ? ORDER BY updated_at DESC`,
+    )
+    .all(auth.user.customerId) as Array<{
+    id: string;
+    title: string;
+    caption: string;
+    mediaType: string;
+    mediaUrlsJson: string;
+    status: string;
+    clientFeedback: string | null;
+    scheduledAt: string | null;
+    publishedAt: string | null;
+    publishedUrl: string | null;
+  }>;
+
+  const contentItems = rawItems.map((item) => ({
+    ...item,
+    mediaUrls: JSON.parse(item.mediaUrlsJson || "[]") as string[],
+  }));
+
   return NextResponse.json({
     ok: true,
-    customer: {
-      code: customer.code,
-      businessName: customer.businessName,
-      fullName: customer.fullName,
-      plan: customer.plan,
-      contractStatus: customer.contractStatus,
-      fanpageUrl: customer.fanpageUrl,
-    },
+    customer,
     brandAssets: assets,
-    contentItems: items,
+    contentItems,
   });
 }

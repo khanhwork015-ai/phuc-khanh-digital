@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { contractStatuses, customerSources, leadStatuses } from "@/db/schema";
+import { contractStatuses, customerSources, leadStatuses } from "@/db/types";
 import { leadPlanValues } from "@/lib/lead-fields";
 
 export const updateLeadSchema = z.object({

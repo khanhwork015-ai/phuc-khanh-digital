@@ -8,26 +8,13 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
 ];
 
-const isGithubPages = process.env.GITHUB_PAGES === "true";
-const basePath = isGithubPages ? (process.env.NEXT_PUBLIC_BASE_PATH ?? "/phuc-khanh-digital") : "";
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Cho code phía trình duyệt biết basePath (dùng trong src/lib/asset-path.ts)
-  env: { NEXT_PUBLIC_BASE_PATH: basePath },
-  ...(isGithubPages
-    ? {
-        output: "export",
-        basePath,
-        assetPrefix: basePath,
-        images: { unoptimized: true },
-      }
-    : {
-        async headers() {
-          return [{ source: "/:path*", headers: securityHeaders }];
-        },
-      }),
+  serverExternalPackages: ["node:sqlite"],
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
 };
 
 export default nextConfig;

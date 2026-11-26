@@ -1,58 +1,58 @@
-import { count, desc, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { contentItems, customers, leads } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
 import { requireAdminApi } from "@/lib/api-auth";
+import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
-  const db = getDb();
+  const javisSync = syncFromJavisLocalDir();
+  const db = getSqliteDb();
 
-  const [
-    totalCustomersRow,
-    activeCustomersRow,
-    totalLeadsRow,
-    newLeadsRow,
-    convertedLeadsRow,
-    pendingContentRow,
-    monthlyRevenueRow,
-    planBreakdown,
-    recentLeads,
-  ] = await Promise.all([
-    db.select({ value: count() }).from(customers),
-    db.select({ value: count() }).from(customers).where(eq(customers.contractStatus, "active")),
-    db.select({ value: count() }).from(leads),
-    db.select({ value: count() }).from(leads).where(eq(leads.status, "new")),
-    db.select({ value: count() }).from(leads).where(eq(leads.status, "converted")),
-    db.select({ value: count() }).from(contentItems).where(eq(contentItems.status, "pending_client")),
+  const totalCustomers = (db.prepare("SELECT count(*) AS c FROM customers").get() as { c: number }).c;
+  const activeCustomers = (
+    db.prepare("SELECT count(*) AS c FROM customers WHERE contract_status = 'active'").get() as { c: number }
+  ).c;
+  const totalLeads = (db.prepare("SELECT count(*) AS c FROM leads").get() as { c: number }).c;
+  const newLeads = (db.prepare("SELECT count(*) AS c FROM leads WHERE status = 'new'").get() as { c: number }).c;
+  const convertedLeads = (
+    db.prepare("SELECT count(*) AS c FROM leads WHERE status = 'converted'").get() as { c: number }
+  ).c;
+  const pendingClientContent = (
+    db.prepare("SELECT count(*) AS c FROM content_items WHERE status = 'pending_client'").get() as { c: number }
+  ).c;
+  const monthlyRevenue = (
     db
-      .select({ value: sql<number>`coalesce(sum(${customers.monthlyFee}), 0)::int` })
-      .from(customers)
-      .where(eq(customers.contractStatus, "active")),
-    db
-      .select({ plan: customers.plan, total: count() })
-      .from(customers)
-      .groupBy(customers.plan),
-    db.select().from(leads).orderBy(desc(leads.createdAt)).limit(5),
-  ]);
+      .prepare("SELECT coalesce(sum(monthly_fee), 0) AS total FROM customers WHERE contract_status = 'active'")
+      .get() as { total: number }
+  ).total;
 
-  const totalLeads = totalLeadsRow[0]?.value ?? 0;
-  const convertedLeads = convertedLeadsRow[0]?.value ?? 0;
+  const planBreakdown = db
+    .prepare("SELECT plan, count(*) AS total FROM customers GROUP BY plan")
+    .all() as Array<{ plan: string; total: number }>;
+
+  const recentLeads = db
+    .prepare(
+      `SELECT id, full_name AS fullName, phone, plan, status, created_at AS createdAt
+       FROM leads ORDER BY created_at DESC LIMIT 5`,
+    )
+    .all();
+
   const conversionRate = totalLeads > 0 ? Math.round((convertedLeads / totalLeads) * 100) : 0;
 
   return NextResponse.json({
     ok: true,
+    javisSync,
     stats: {
-      totalCustomers: totalCustomersRow[0]?.value ?? 0,
-      activeCustomers: activeCustomersRow[0]?.value ?? 0,
+      totalCustomers,
+      activeCustomers,
       totalLeads,
-      newLeads: newLeadsRow[0]?.value ?? 0,
+      newLeads,
       convertedLeads,
       conversionRate,
-      pendingClientContent: pendingContentRow[0]?.value ?? 0,
-      monthlyRevenue: monthlyRevenueRow[0]?.value ?? 0,
+      pendingClientContent,
+      monthlyRevenue,
       planBreakdown,
     },
     recentLeads,

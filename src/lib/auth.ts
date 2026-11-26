@@ -1,12 +1,12 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { getDb } from "@/db";
-import { sessions, users, type UserRole } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
+import type { UserRole } from "@/db/types";
 import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
 import { hashPassword, hashSessionToken, verifyPassword } from "@/lib/password";
 
 export { SESSION_COOKIE_NAME, hashPassword, hashSessionToken, verifyPassword };
+
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type SessionUser = {
@@ -16,25 +16,27 @@ export type SessionUser = {
   customerId: string | null;
 };
 
-export async function createSession(userId: string): Promise<{ token: string; expiresAt: Date }> {
+export function createSession(userId: string): { token: string; expiresAt: Date } {
   const rawToken = randomBytes(32).toString("hex");
   const hashedId = hashSessionToken(rawToken);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  const now = new Date().toISOString();
 
-  const db = getDb();
-  await db.insert(sessions).values({
-    id: hashedId,
+  const db = getSqliteDb();
+  db.prepare("INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)").run(
+    hashedId,
     userId,
-    expiresAt,
-  });
+    expiresAt.toISOString(),
+    now,
+  );
 
   return { token: rawToken, expiresAt };
 }
 
-export async function deleteSessionByToken(rawToken: string): Promise<void> {
+export function deleteSessionByToken(rawToken: string): void {
   const hashedId = hashSessionToken(rawToken);
-  const db = getDb();
-  await db.delete(sessions).where(eq(sessions.id, hashedId));
+  const db = getSqliteDb();
+  db.prepare("DELETE FROM sessions WHERE id = ?").run(hashedId);
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -43,28 +45,34 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!rawToken) return null;
 
   const hashedId = hashSessionToken(rawToken);
-  const db = getDb();
-  const rows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      role: users.role,
-      isActive: users.isActive,
-      customerId: users.customerId,
-    })
-    .from(sessions)
-    .innerJoin(users, eq(sessions.userId, users.id))
-    .where(and(eq(sessions.id, hashedId), gt(sessions.expiresAt, new Date())))
-    .limit(1);
+  const db = getSqliteDb();
+  const now = new Date().toISOString();
 
-  const user = rows[0];
-  if (!user || !user.isActive) return null;
+  const row = db
+    .prepare(
+      `SELECT u.id, u.username, u.role, u.is_active, u.customer_id
+       FROM sessions s
+       INNER JOIN users u ON s.user_id = u.id
+       WHERE s.id = ? AND s.expires_at > ?
+       LIMIT 1`,
+    )
+    .get(hashedId, now) as
+    | {
+        id: string;
+        username: string;
+        role: UserRole;
+        is_active: number;
+        customer_id: string | null;
+      }
+    | undefined;
+
+  if (!row || row.is_active !== 1) return null;
 
   return {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-    customerId: user.customerId,
+    id: row.id,
+    username: row.username,
+    role: row.role,
+    customerId: row.customer_id,
   };
 }
 

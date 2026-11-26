@@ -1,7 +1,5 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { leads } from "@/db/schema";
+import { getSqliteDb } from "@/db/sqlite";
 import { updateLeadSchema } from "@/lib/admin-schemas";
 import { requireAdminApi } from "@/lib/api-auth";
 
@@ -25,16 +23,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  const db = getDb();
-  const [updated] = await db
-    .update(leads)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(leads.id, id))
-    .returning();
-
-  if (!updated) {
+  const db = getSqliteDb();
+  const existing = db.prepare("SELECT id, status, note FROM leads WHERE id = ?").get(id) as
+    | { id: string; status: string; note: string | null }
+    | undefined;
+  if (!existing) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy Lead." }, { status: 404 });
   }
+
+  const now = new Date().toISOString();
+  db.prepare("UPDATE leads SET status = ?, note = ?, updated_at = ? WHERE id = ?").run(
+    parsed.data.status ?? existing.status,
+    parsed.data.note !== undefined ? parsed.data.note : existing.note,
+    now,
+    id,
+  );
+
+  const updated = db
+    .prepare(
+      `SELECT id, full_name AS fullName, phone, fanpage_url AS fanpageUrl, plan, status, note,
+       synced_to_javis AS syncedToJavis, converted_customer_id AS convertedCustomerId, created_at AS createdAt
+       FROM leads WHERE id = ?`,
+    )
+    .get(id);
 
   return NextResponse.json({ ok: true, lead: updated });
 }
@@ -44,11 +55,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-  const db = getDb();
-  const [deleted] = await db.delete(leads).where(eq(leads.id, id)).returning({ id: leads.id });
-  if (!deleted) {
+  const db = getSqliteDb();
+  const res = db.prepare("DELETE FROM leads WHERE id = ?").run(id);
+  if (res.changes === 0) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy Lead." }, { status: 404 });
   }
-
   return NextResponse.json({ ok: true });
 }
