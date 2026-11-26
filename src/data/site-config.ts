@@ -82,22 +82,6 @@ export const heroMockPosts: HeroMockPostItem[] = [
     comments: 31,
     shares: 12,
   },
-  {
-    id: "t2n-1",
-    brandId: "t2n",
-    shortLogoName: "T2N",
-    pageName: "T2N - Cộng Đồng Tuyển Sinh Đại Học & Thạc Sĩ",
-    caption:
-      "🎯 DẠY TIẾNG ANH TRÁI NGÀNH? NÂNG BẰNG THẠC SĨ MAE ĐẠI HỌC HOA SEN NGAY!\n\n✨ Bằng chuẩn AUN-QA, xét tuyển 100% hồ sơ + bài luận không thi áp lực, lịch học linh hoạt Thứ 7 & Chủ nhật.\n\n⏰ Hạn chót nhận hồ sơ: 13/11/2026\n📞 Hotline/Zalo: 03.388.21.365",
-    photoSrc: "/samples/t2n/post-1.jpg",
-    photoAlt: "T2N Tuyển sinh Thạc sĩ 2026 Ngôn ngữ Anh MAE Đại học Hoa Sen",
-    avatarSrc: "/samples/t2n/avatar.png",
-    logoSrc: "/samples/t2n/avatar.png",
-    scheduledAt: "16:31 · 11/11/2026",
-    likes: 215,
-    comments: 42,
-    shares: 19,
-  },
 ];
 
 export const heroMockPost = {
