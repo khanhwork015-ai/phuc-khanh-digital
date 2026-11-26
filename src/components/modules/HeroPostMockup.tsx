@@ -4,28 +4,46 @@ import { CalendarClock, Check, Globe2, MessageCircle, PenLine, Share2, ThumbsUp 
 import Image from "next/image";
 import { AnimatePresence, m, useInView, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { HoaSuaPhoto } from "@/components/ui/HoaSuaPhoto";
-import { heroMockPost } from "@/data/site-config";
+import { heroMockPost, heroMockPosts } from "@/data/site-config";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const STAGE_MS = 2600;
 
-/**
- * Khung kính mô phỏng một bài đăng Facebook đi qua 4 trạng thái:
- * Đang viết -> Gắn logo gốc -> Chờ duyệt -> Đã đăng đúng giờ.
- */
 export function HeroPostMockup() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { margin: "-40px" });
   const reduce = useReducedMotion();
+  const [postIndex, setPostIndex] = useState(0);
   const [stage, setStage] = useState(0);
   const stages = heroMockPost.stages;
+  const post = heroMockPosts[postIndex] ?? heroMockPosts[0];
   const current = stages[stage].key;
 
   useEffect(() => {
+    const brandStartIndices: number[] = [];
+    const seenBrands = new Set<string>();
+    heroMockPosts.forEach((item, idx) => {
+      if (!seenBrands.has(item.brandId)) {
+        seenBrands.add(item.brandId);
+        brandStartIndices.push(idx);
+      }
+    });
+    if (brandStartIndices.length > 1) {
+      const picked = brandStartIndices[Math.floor(Math.random() * brandStartIndices.length)];
+      setPostIndex(picked);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!inView) return;
-    const id = window.setInterval(() => setStage((s) => (s + 1) % stages.length), STAGE_MS);
+    const id = window.setInterval(() => {
+      setStage((s) => {
+        if (s + 1 < stages.length) return s + 1;
+        setPostIndex((idx) => (idx + 1) % heroMockPosts.length);
+        return 0;
+      });
+    }, STAGE_MS);
     return () => window.clearInterval(id);
   }, [inView, stages.length]);
 
@@ -72,39 +90,46 @@ export function HeroPostMockup() {
         <article className="overflow-hidden rounded-xl border border-line bg-surface">
           <header className="flex items-center gap-3 px-4 pt-4">
             <Image
-              src={heroMockPost.avatarSrc}
-              alt="Ảnh đại diện Hoa Sữa"
+              src={post.avatarSrc}
+              alt={`Ảnh đại diện ${post.pageName}`}
               width={40}
               height={40}
               className="size-10 shrink-0 rounded-full border border-line object-cover"
             />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-fg">{heroMockPost.pageName}</p>
+              <p className="truncate text-[14px] font-semibold text-fg">{post.pageName}</p>
               <p className="flex items-center gap-1 text-[12px] text-fg-3">
                 {published ? "Vừa xong" : "Đã lên lịch"} · <Globe2 size={11} strokeWidth={1.5} aria-hidden />
               </p>
             </div>
             <span className="hidden items-center gap-1 font-mono text-[11px] text-fg-3 sm:inline-flex">
               <CalendarClock size={12} strokeWidth={1.5} aria-hidden />
-              {heroMockPost.scheduledAt}
+              {post.scheduledAt}
             </span>
           </header>
 
-          <Caption text={heroMockPost.caption} typing={current === "writing" && !reduce} />
+          <Caption text={post.caption} typing={current === "writing" && !reduce} />
 
           {/* Ảnh */}
           <div className="relative mt-3 aspect-[4/3] overflow-hidden border-y border-line bg-elevated">
             <AnimatePresence initial={false}>
               {showImage ? (
                 <m.div
-                  key="photo"
+                  key={`photo-${post.id}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.45, ease: easeOutExpo }}
                   className="absolute inset-0"
                 >
-                  <HoaSuaPhoto />
+                  <Image
+                    src={post.photoSrc}
+                    alt={post.photoAlt}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 520px"
+                    className="object-cover"
+                    priority
+                  />
                 </m.div>
               ) : (
                 <m.div
@@ -126,7 +151,7 @@ export function HeroPostMockup() {
             <AnimatePresence>
               {showLogo && (
                 <m.div
-                  key="logo"
+                  key={`logo-${post.id}`}
                   initial={{ opacity: 0, scale: 0.92 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
@@ -136,8 +161,14 @@ export function HeroPostMockup() {
                     current === "logo" && "outline outline-1 outline-offset-4 outline-dashed outline-accent/70",
                   )}
                 >
-                  <Image src={heroMockPost.logoSrc} alt="Logo Hoa Sữa Coffee & Tea" width={27} height={33} className="hidden sm:block" />
-                  <span className="text-[10px] font-bold tracking-[0.08em] text-ivory">HOA SỮA</span>
+                  <Image
+                    src={post.logoSrc}
+                    alt={`Logo ${post.shortLogoName}`}
+                    width={27}
+                    height={27}
+                    className="hidden rounded object-cover sm:block"
+                  />
+                  <span className="text-[10px] font-bold tracking-[0.08em] text-ivory">{post.shortLogoName}</span>
                 </m.div>
               )}
             </AnimatePresence>
@@ -162,11 +193,11 @@ export function HeroPostMockup() {
                     <span className="flex size-4 items-center justify-center rounded-full bg-[#1877F2]">
                       <ThumbsUp size={9} strokeWidth={2.5} className="text-white" aria-hidden />
                     </span>
-                    128
+                    {post.likes}
                   </m.span>
                 )}
               </AnimatePresence>
-              {published && <span>24 bình luận · 6 lượt chia sẻ</span>}
+              {published && <span>{post.comments} bình luận · {post.shares} lượt chia sẻ</span>}
             </div>
             <div className="mt-2.5 grid grid-cols-3 border-t border-line pt-1.5 text-[13px] text-fg-2">
               {[

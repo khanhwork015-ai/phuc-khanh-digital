@@ -34,6 +34,72 @@ export const hoaSuaPost = {
   address: "137 Đinh Tiên Hoàng, Phường An Xuyên",
 } as const;
 
+export type HeroMockPostItem = {
+  id: string;
+  brandId: string;
+  shortLogoName: string;
+  pageName: string;
+  caption: string;
+  photoSrc: string;
+  photoAlt: string;
+  avatarSrc: string;
+  logoSrc: string;
+  scheduledAt: string;
+  likes: number;
+  comments: number;
+  shares: number;
+};
+
+export const heroMockPosts: HeroMockPostItem[] = [
+  {
+    id: "hoa-sua-1",
+    brandId: "hoa-sua",
+    shortLogoName: "HOA SỮA",
+    pageName: hoaSuaPost.pageName,
+    caption: hoaSuaPost.caption,
+    photoSrc: hoaSuaPost.photoSrc,
+    photoAlt: hoaSuaPost.photoAlt,
+    avatarSrc: hoaSuaPost.avatarSrc,
+    logoSrc: hoaSuaPost.logoSrc,
+    scheduledAt: "19:00 · 24/11/2026",
+    likes: 128,
+    comments: 24,
+    shares: 6,
+  },
+  {
+    id: "shin-aios-1",
+    brandId: "shin-aios",
+    shortLogoName: "SHIN AIOS",
+    pageName: "SHIN AIOS",
+    caption:
+      "Thuê ngoài viết bài mà ký hợp đồng xong vẫn phải tự viết nháp ý chính gửi qua thì cũng mệt không kém tự làm.\n\nỞ SHIN AIOS, ngay sau khi chốt hợp đồng, đội ngũ trực tiếp thu thập Brand Kit, sản xuất bài viết, thiết kế ảnh gắn logo và gửi bạn duyệt bằng 1 chạm.\n\n#SHINAIOS #DichVuFanpage #VanHanhNoiDung",
+    photoSrc: "/samples/shin-aios/post-1.jpg",
+    photoAlt: "Bạn chỉ cần duyệt bài - SHIN AIOS lo trọn gói vận hành",
+    avatarSrc: "/samples/shin-aios/avatar.png",
+    logoSrc: "/samples/shin-aios/avatar.png",
+    scheduledAt: "19:00 · 25/11/2026",
+    likes: 164,
+    comments: 31,
+    shares: 12,
+  },
+  {
+    id: "t2n-1",
+    brandId: "t2n",
+    shortLogoName: "T2N",
+    pageName: "T2N - Cộng Đồng Tuyển Sinh Đại Học & Thạc Sĩ",
+    caption:
+      "🎯 DẠY TIẾNG ANH TRÁI NGÀNH? NÂNG BẰNG THẠC SĨ MAE ĐẠI HỌC HOA SEN NGAY!\n\n✨ Bằng chuẩn AUN-QA, xét tuyển 100% hồ sơ + bài luận không thi áp lực, lịch học linh hoạt Thứ 7 & Chủ nhật.\n\n⏰ Hạn chót nhận hồ sơ: 13/11/2026\n📞 Hotline/Zalo: 03.388.21.365",
+    photoSrc: "/samples/t2n/post-1.jpg",
+    photoAlt: "T2N Tuyển sinh Thạc sĩ 2026 Ngôn ngữ Anh MAE Đại học Hoa Sen",
+    avatarSrc: "/samples/t2n/avatar.png",
+    logoSrc: "/samples/t2n/avatar.png",
+    scheduledAt: "16:31 · 11/11/2026",
+    likes: 215,
+    comments: 42,
+    shares: 19,
+  },
+];
+
 export const heroMockPost = {
   ...hoaSuaPost,
   scheduledAt: "19:00 · 24/11/2026",
