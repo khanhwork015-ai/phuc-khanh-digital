@@ -60,3 +60,42 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     account: { id, isActive: nextActive === 1 },
   });
 }
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdminApi();
+  if (!auth.ok) return auth.response;
+
+  const { id } = await params;
+  if (id === auth.user.id) {
+    return NextResponse.json(
+      { ok: false, message: "Không thể tự xóa tài khoản quản trị viên đang đăng nhập." },
+      { status: 400 },
+    );
+  }
+
+  const db = getSqliteDb();
+  const target = db.prepare("SELECT id, role FROM users WHERE id = ? LIMIT 1").get(id) as
+    | { id: string; role: string }
+    | undefined;
+
+  if (!target) {
+    return NextResponse.json({ ok: false, message: "Không tìm thấy tài khoản." }, { status: 404 });
+  }
+
+  if (target.role === "ADMIN") {
+    const adminCount = (
+      db.prepare("SELECT count(*) AS c FROM users WHERE role = 'ADMIN'").get() as { c: number }
+    ).c;
+    if (adminCount <= 1) {
+      return NextResponse.json(
+        { ok: false, message: "Không thể xóa tài khoản Admin cuối cùng của hệ thống." },
+        { status: 400 },
+      );
+    }
+  }
+
+  db.prepare("DELETE FROM sessions WHERE user_id = ?").run(id);
+  db.prepare("DELETE FROM users WHERE id = ?").run(id);
+
+  return NextResponse.json({ ok: true });
+}
