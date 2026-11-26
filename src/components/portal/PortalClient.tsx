@@ -59,6 +59,7 @@ export function PortalClient({ username }: { username: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"content" | "brand">("content");
+  const [contentFilter, setContentFilter] = useState<"pending" | "approved" | "published" | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -95,8 +96,22 @@ export function PortalClient({ username }: { username: string }) {
       pending: items.filter((i) => i.status === "pending_client").length,
       approved: items.filter((i) => i.status === "approved" || i.status === "scheduled").length,
       published: items.filter((i) => i.status === "published").length,
+      all: items.length,
     };
   }, [data]);
+
+  const pendingItems = useMemo(
+    () => (data?.contentItems ?? []).filter((i) => i.status === "pending_client"),
+    [data],
+  );
+
+  const filteredItems = useMemo(() => {
+    const items = data?.contentItems ?? [];
+    if (contentFilter === "pending") return items.filter((i) => i.status === "pending_client");
+    if (contentFilter === "approved") return items.filter((i) => i.status === "approved" || i.status === "scheduled");
+    if (contentFilter === "published") return items.filter((i) => i.status === "published");
+    return pendingItems.length > 0 ? items.filter((i) => i.status !== "pending_client") : items;
+  }, [data, contentFilter, pendingItems.length]);
 
   const selected = data?.contentItems.find((i) => i.id === selectedId) ?? null;
 
@@ -231,50 +246,58 @@ export function PortalClient({ username }: { username: string }) {
             </div>
 
             {activeTab === "content" ? (
-              <div className="space-y-4">
-                {data.contentItems.length === 0 ? (
+              <div className="space-y-5">
+                {contentFilter === "all" && pendingItems.length > 0 && (
+                  <section className="space-y-3 rounded-2xl border border-line-accent bg-accent-muted/30 p-4 sm:p-5">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-accent">
+                        Bài đang chờ bạn duyệt ({pendingItems.length})
+                      </h2>
+                      <span className="text-xs text-fg-3">Ưu tiên xử lý trước giờ đăng</span>
+                    </div>
+                    <div className="space-y-3">
+                      {pendingItems.map((item) => (
+                        <PortalContentCard key={item.id} item={item} onSelect={() => setSelectedId(item.id)} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { value: "pending" as const, label: `Chờ duyệt (${counts.pending})` },
+                    { value: "approved" as const, label: `Đã duyệt (${counts.approved})` },
+                    { value: "published" as const, label: `Đã đăng (${counts.published})` },
+                    { value: "all" as const, label: `Tất cả (${counts.all})` },
+                  ].map((tab) => (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => setContentFilter(tab.value)}
+                      className={cn(
+                        "rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                        contentFilter === tab.value
+                          ? "bg-accent text-canvas"
+                          : "border border-line bg-surface text-fg-2 hover:text-fg",
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredItems.length === 0 ? (
                   <div className="rounded-2xl border border-line bg-surface/60 p-8 text-center text-sm text-fg-3">
-                    Hiện chưa có bài viết nào được đồng bộ lên cổng duyệt.
+                    {contentFilter === "all"
+                      ? "Hiện chưa có bài viết nào được đồng bộ lên cổng duyệt."
+                      : "Không có bài viết nào trong mục này."}
                   </div>
                 ) : (
-                  data.contentItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedId(item.id)}
-                      className="group flex w-full gap-3 rounded-2xl border border-line bg-surface/80 p-4 text-left transition-colors hover:border-line-accent sm:p-5"
-                    >
-                      {item.mediaUrls[0] && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.mediaUrls[0]} alt="" className="size-16 shrink-0 rounded-xl border border-line object-cover" />
-                      )}
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={cn(
-                              "rounded-lg border px-2.5 py-0.5 text-[11px] font-semibold",
-                              item.status === "pending_client"
-                                ? "border-line-accent bg-accent-muted text-accent"
-                                : "border-line bg-canvas text-fg-2",
-                            )}
-                          >
-                            {contentStatusLabel[item.status] ?? item.status}
-                          </span>
-                          <span className="font-mono text-[11px] text-fg-3">
-                            {formatPostTime(item.publishedAt || item.scheduledAt)}
-                          </span>
-                        </div>
-                        <h2 className="text-base font-semibold text-fg group-hover:text-accent">{item.title}</h2>
-                        <p className="line-clamp-2 text-sm text-fg-2">{item.caption}</p>
-                        {item.clientFeedback && (
-                          <p className="line-clamp-2 text-xs text-amber-300">Góp ý của bạn: {item.clientFeedback}</p>
-                        )}
-                      </div>
-                      <span className="hidden h-9 shrink-0 items-center rounded-xl border border-line bg-canvas px-3.5 text-xs font-medium text-fg-2 group-hover:text-accent sm:inline-flex">
-                        {item.actions.includes("approve") ? "Xem và duyệt" : "Xem bài"}
-                      </span>
-                    </button>
-                  ))
+                  <div className="space-y-3">
+                    {filteredItems.map((item) => (
+                      <PortalContentCard key={item.id} item={item} onSelect={() => setSelectedId(item.id)} />
+                    ))}
+                  </div>
                 )}
               </div>
             ) : (
@@ -353,5 +376,51 @@ export function PortalClient({ username }: { username: string }) {
         />
       )}
     </div>
+  );
+}
+
+function PortalContentCard({
+  item,
+  onSelect,
+}: {
+  item: PortalOverview["contentItems"][number];
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="group flex w-full gap-3 rounded-2xl border border-line bg-surface/80 p-4 text-left transition-colors hover:border-line-accent sm:p-5"
+    >
+      {item.mediaUrls[0] && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.mediaUrls[0]} alt="" className="size-16 shrink-0 rounded-xl border border-line object-cover" />
+      )}
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              "rounded-lg border px-2.5 py-0.5 text-[11px] font-semibold",
+              item.status === "pending_client"
+                ? "border-line-accent bg-accent-muted text-accent"
+                : "border-line bg-canvas text-fg-2",
+            )}
+          >
+            {contentStatusLabel[item.status] ?? item.status}
+          </span>
+          <span className="font-mono text-[11px] text-fg-3">
+            {formatPostTime(item.publishedAt || item.scheduledAt)}
+          </span>
+        </div>
+        <h2 className="text-base font-semibold text-fg group-hover:text-accent">{item.title}</h2>
+        <p className="line-clamp-2 text-sm text-fg-2">{item.caption}</p>
+        {item.clientFeedback && (
+          <p className="line-clamp-2 text-xs text-amber-300">Góp ý của bạn: {item.clientFeedback}</p>
+        )}
+      </div>
+      <span className="hidden h-9 shrink-0 items-center rounded-xl border border-line bg-canvas px-3.5 text-xs font-medium text-fg-2 group-hover:text-accent sm:inline-flex">
+        {item.actions.includes("approve") ? "Xem và duyệt" : "Xem bài"}
+      </span>
+    </button>
   );
 }
