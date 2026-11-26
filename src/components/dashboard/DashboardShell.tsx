@@ -56,7 +56,7 @@ export function DashboardShell({
 
   return (
     <div className="min-h-dvh bg-canvas text-fg">
-      <div className="mx-auto flex min-h-dvh max-w-[1440px]">
+      <div className="flex min-h-dvh w-full">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface/60 p-4 lg:flex">
           <div className="flex items-center justify-between px-2 py-2">
             <Link href="/" aria-label="Về trang chủ Landing Page">
@@ -153,6 +153,7 @@ export function DashboardShell({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, ease: easeOutExpo }}
+              className="mx-auto w-full max-w-6xl"
             >
               {children}
             </m.div>
