@@ -4,6 +4,7 @@ import { ArrowRightLeft, ExternalLink, Search, Trash2 } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog, type ConfirmChangeItem } from "@/components/ui/ConfirmDialog";
+import { SelectDropdown } from "@/components/ui/SelectDropdown";
 import { leadPlanLabels, type LeadPlanValue } from "@/lib/lead-fields";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -330,17 +331,12 @@ export function LeadsClient({ canEdit = false }: { canEdit?: boolean }) {
             <div className="mt-4 space-y-4">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-fg-2">Trạng thái xử lý</label>
-                <select
+                <SelectDropdown
+                  ariaLabel="Chọn trạng thái xử lý"
                   value={draftStatus}
-                  onChange={(e) => setDraftStatus(e.target.value as LeadRow["status"])}
-                  className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
-                >
-                  {statusOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setDraftStatus(val as LeadRow["status"])}
+                  options={statusOptions}
+                />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-fg-2">Ghi chú tư vấn</label>

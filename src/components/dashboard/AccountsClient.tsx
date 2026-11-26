@@ -4,6 +4,7 @@ import { KeyRound, Lock, Plus, Shield, Unlock } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { SelectDropdown } from "@/components/ui/SelectDropdown";
 import { userRoles, type UserRole } from "@/db/types";
 import { roleLabels } from "@/lib/permissions";
 import { easeOutExpo } from "@/lib/theme";
@@ -274,34 +275,27 @@ export function AccountsClient({ canEdit = false }: { canEdit?: boolean }) {
             <div className="mt-4 space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Vai trò *</label>
-                <select
+                <SelectDropdown
+                  ariaLabel="Chọn vai trò"
                   value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
-                >
-                  {userRoles.map((r) => (
-                    <option key={r} value={r}>
-                      {roleLabels[r]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setRole(val as UserRole)}
+                  options={userRoles.map((r) => ({ value: r, label: roleLabels[r] }))}
+                />
               </div>
               {role === "CUSTOMER" && (
                 <div>
                   <label className="mb-1 block text-xs font-medium text-fg-2">Chọn khách hàng *</label>
-                  <select
-                    required
+                  <SelectDropdown
+                    ariaLabel="Chọn khách hàng"
                     value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
-                  >
-                    <option value="">-- Chọn khách hàng --</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.code} - {c.businessName}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setCustomerId}
+                    placeholder="-- Chọn khách hàng --"
+                    options={customers.map((c) => ({
+                      value: c.id,
+                      label: `${c.code} - ${c.businessName}`,
+                      avatarText: c.businessName.charAt(0).toUpperCase(),
+                    }))}
+                  />
                 </div>
               )}
               <div>
