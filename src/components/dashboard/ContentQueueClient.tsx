@@ -1,8 +1,8 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { Building2, RefreshCw, Search, X } from "lucide-react";
 import { m } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPostTime } from "@/components/content/FacebookPostPreview";
 import { PostReviewModal, type ReviewAction } from "@/components/content/PostReviewModal";
 import { easeOutExpo } from "@/lib/theme";
@@ -51,6 +51,8 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
   const [items, setItems] = useState<ContentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [search, setSearch] = useState<string>("");
   const [syncInfo, setSyncInfo] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -79,9 +81,61 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
     void loadContent();
   }, [loadContent]);
 
+  const brands = useMemo(() => {
+    const map = new Map<string, { key: string; name: string; logoUrl: string | null; total: number; pending: number }>();
+    for (const item of items) {
+      const key = item.customerSlug || item.customerName;
+      const existing = map.get(key);
+      if (existing) {
+        existing.total += 1;
+        if (item.status === "pending_review") existing.pending += 1;
+      } else {
+        map.set(key, {
+          key,
+          name: item.customerName,
+          logoUrl: item.logoUrl,
+          total: 1,
+          pending: item.status === "pending_review" ? 1 : 0,
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"));
+  }, [items]);
+
+  const brandAndSearchFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((item) => {
+      const key = item.customerSlug || item.customerName;
+      if (brandFilter !== "all" && key !== brandFilter) return false;
+      if (!q) return true;
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.code.toLowerCase().includes(q) ||
+        item.customerName.toLowerCase().includes(q) ||
+        item.caption.toLowerCase().includes(q)
+      );
+    });
+  }, [items, brandFilter, search]);
+
   const selected = items.find((i) => i.id === selectedId) ?? null;
-  const filtered = filter === "all" ? items : items.filter((i) => i.status === filter);
-  const countOf = (v: string) => (v === "all" ? items.length : items.filter((i) => i.status === v).length);
+  const filtered = useMemo(
+    () =>
+      filter === "all"
+        ? brandAndSearchFiltered
+        : brandAndSearchFiltered.filter((i) => i.status === filter),
+    [brandAndSearchFiltered, filter],
+  );
+
+  const countOf = (v: string) =>
+    v === "all" ? brandAndSearchFiltered.length : brandAndSearchFiltered.filter((i) => i.status === v).length;
+
+  const hasActiveFilter = filter !== "all" || brandFilter !== "all" || search.trim() !== "";
+
+  function resetFilters() {
+    setFilter("all");
+    setBrandFilter("all");
+    setSearch("");
+  }
 
   async function decide(item: ContentRow, action: ReviewAction, feedback?: string) {
     const res = await fetch(`/api/admin/content/${item.id}/decision`, {
@@ -98,7 +152,7 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent">Đồng bộ Javis OS</p>
@@ -124,20 +178,124 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1.5">
-        {tabs.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setFilter(tab.value)}
-            className={cn(
-              "rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
-              filter === tab.value ? "bg-accent text-canvas" : "border border-line bg-surface text-fg-2 hover:text-fg",
+      <div className="space-y-3 rounded-2xl border border-line bg-surface/60 p-3.5 sm:p-4">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 sm:max-w-sm">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm tiêu đề, mã bài, nội dung..."
+              className="h-9 w-full rounded-xl border border-line bg-canvas pl-9 pr-3 text-sm text-fg placeholder:text-fg-3 focus:border-accent focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 sm:flex-none">
+              <Building2 size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" />
+              <select
+                aria-label="Lọc theo khách hàng"
+                value={brandFilter}
+                onChange={(e) => setBrandFilter(e.target.value)}
+                className="h-9 w-full rounded-xl border border-line bg-canvas pl-8 pr-8 text-xs font-medium text-fg focus:border-accent focus:outline-none sm:w-52"
+              >
+                <option value="all">Tất cả khách / Brand ({items.length})</option>
+                {brands.map((b) => (
+                  <option key={b.key} value={b.key}>
+                    {b.name} ({b.total})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl border border-line bg-canvas px-2.5 text-xs text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+              >
+                <X size={13} />
+                <span>Đặt lại</span>
+              </button>
             )}
-          >
-            {tab.label} <span className="opacity-70">({countOf(tab.value)})</span>
-          </button>
-        ))}
+          </div>
+        </div>
+
+        {brands.length > 0 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+            <button
+              type="button"
+              onClick={() => setBrandFilter("all")}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                brandFilter === "all"
+                  ? "bg-elevated text-fg ring-1 ring-line-strong"
+                  : "text-fg-3 hover:bg-canvas/70 hover:text-fg",
+              )}
+            >
+              <span>Tất cả Brand</span>
+              <span className="font-mono text-[11px] opacity-70">{items.length}</span>
+            </button>
+            {brands.map((b) => (
+              <button
+                key={b.key}
+                type="button"
+                onClick={() => setBrandFilter(b.key)}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                  brandFilter === b.key
+                    ? "bg-accent/15 text-accent ring-1 ring-line-accent"
+                    : "text-fg-2 hover:bg-canvas/70 hover:text-fg",
+                )}
+              >
+                {b.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={b.logoUrl} alt="" className="size-4 rounded-full bg-white object-cover" />
+                ) : (
+                  <span className="flex size-4 items-center justify-center rounded-full bg-elevated text-[10px] font-bold text-accent">
+                    {b.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <span>{b.name}</span>
+                <span className="font-mono text-[11px] opacity-70">{b.total}</span>
+                {b.pending > 0 && (
+                  <span className="rounded-full bg-accent px-1.5 py-0.2 font-mono text-[10px] font-bold text-canvas">
+                    {b.pending}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-1.5 border-t border-line pt-3">
+          {tabs.map((tab) => {
+            const active = filter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setFilter(tab.value)}
+                className={cn(
+                  "relative rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                  active ? "text-canvas" : "border border-line bg-canvas/80 text-fg-2 hover:text-fg",
+                )}
+              >
+                {active && (
+                  <m.span
+                    layoutId="admin-content-status-pill"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    className="absolute inset-0 rounded-xl bg-accent"
+                  />
+                )}
+                <span className="relative z-10">
+                  {tab.label} <span className="opacity-75">({countOf(tab.value)})</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {loading ? (
@@ -148,7 +306,16 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-line bg-surface/60 p-8 text-center text-sm text-fg-3">
-          Chưa có bài viết nào phù hợp bộ lọc hiện tại.
+          <p>Chưa có bài viết nào phù hợp bộ lọc hiện tại.</p>
+          {hasActiveFilter && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-3 inline-flex h-9 items-center rounded-xl border border-line bg-canvas px-4 text-xs font-medium text-accent hover:border-line-accent"
+            >
+              Xóa bộ lọc để xem tất cả
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">
