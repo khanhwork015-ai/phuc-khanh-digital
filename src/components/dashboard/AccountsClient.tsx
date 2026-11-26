@@ -260,96 +260,134 @@ export function AccountsClient({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {accounts.map((acc, idx) => (
-            <m.div
-              key={acc.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.2), ease: easeOutExpo }}
-              className="flex flex-col gap-4 rounded-2xl border border-line bg-surface/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+        <div className="overflow-x-auto rounded-2xl border border-line bg-surface/80">
+          <div className="lg:min-w-[940px]">
+            <div
+              className={
+                canEdit
+                  ? "hidden border-b border-line bg-canvas/50 px-5 py-3 text-[11px] font-mono uppercase tracking-[0.12em] text-fg-3 lg:grid lg:grid-cols-[minmax(150px,1.3fr)_minmax(180px,1.2fr)_120px_108px_368px] lg:items-center lg:gap-3"
+                  : "hidden border-b border-line bg-canvas/50 px-5 py-3 text-[11px] font-mono uppercase tracking-[0.12em] text-fg-3 lg:grid lg:grid-cols-[minmax(150px,1.3fr)_minmax(180px,1.2fr)_120px_108px] lg:items-center lg:gap-3"
+              }
             >
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-base font-semibold text-fg">{acc.username}</p>
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-line bg-canvas px-2 py-0.5 font-mono text-[11px] text-accent">
-                    <Shield size={11} />
-                    {roleLabels[acc.role] ?? acc.role}
-                  </span>
-                  <span
-                    className={
-                      acc.isActive
-                        ? "rounded-lg bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300"
-                        : "rounded-lg bg-red-500/10 px-2 py-0.5 text-[11px] font-medium text-red-300"
-                    }
-                  >
-                    {acc.isActive ? "Đang hoạt động" : "Đã khóa"}
-                  </span>
-                  <span
-                    className={
-                      acc.hasPin
-                        ? "rounded-lg border border-line bg-canvas px-2 py-0.5 text-[11px] text-fg-2"
-                        : "rounded-lg border border-line bg-canvas px-2 py-0.5 text-[11px] text-fg-3"
-                    }
-                  >
-                    {acc.hasPin ? "Đã đặt PIN" : "Chưa đặt PIN"}
-                  </span>
-                </div>
-                <p className="text-xs text-fg-3">
-                  {acc.customerName
-                    ? `Khách hàng: ${acc.customerCode} · ${acc.customerName}`
-                    : "Tài khoản nội bộ"}
-                </p>
-              </div>
+              <span>Tài khoản</span>
+              <span>Vai trò</span>
+              <span>Trạng thái</span>
+              <span>Mã PIN</span>
+              {canEdit && <span className="text-right">Thao tác</span>}
+            </div>
 
-              {canEdit && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {acc.hasPin && (
-                    <button
-                      type="button"
-                      onClick={() => requestResetPin(acc)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg-2 hover:border-line-strong hover:text-fg"
+            <div className="divide-y divide-line">
+              {accounts.map((acc, idx) => (
+                <m.div
+                  key={acc.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.15), ease: easeOutExpo }}
+                  className={
+                    canEdit
+                      ? "grid grid-cols-1 gap-3 px-4 py-4 transition-colors hover:bg-canvas/30 lg:grid-cols-[minmax(150px,1.3fr)_minmax(180px,1.2fr)_120px_108px_368px] lg:items-center lg:gap-3 lg:px-5"
+                      : "grid grid-cols-1 gap-3 px-4 py-4 transition-colors hover:bg-canvas/30 lg:grid-cols-[minmax(150px,1.3fr)_minmax(180px,1.2fr)_120px_108px] lg:items-center lg:gap-3 lg:px-5"
+                  }
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-fg">{acc.username}</p>
+                    <p className="truncate text-xs text-fg-3">
+                      {acc.customerName
+                        ? `Khách hàng: ${acc.customerCode} · ${acc.customerName}`
+                        : "Tài khoản nội bộ"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-line bg-canvas px-2.5 py-1 font-mono text-[11px] text-accent">
+                      <Shield size={11} />
+                      {roleLabels[acc.role] ?? acc.role}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span
+                      className={
+                        acc.isActive
+                          ? "inline-flex items-center rounded-lg bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300"
+                          : "inline-flex items-center rounded-lg bg-red-500/10 px-2.5 py-1 text-[11px] font-medium text-red-300"
+                      }
                     >
-                      <RotateCcw size={13} />
-                      <span>Đặt lại PIN</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setResetTarget(acc);
-                      setCurrentPassword("");
-                      setNewPassword("");
-                    }}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
-                  >
-                    <KeyRound size={13} />
-                    <span>Đổi mật khẩu</span>
-                  </button>
-                  {acc.role !== "ADMIN" && (
-                    <button
-                      type="button"
-                      onClick={() => requestToggleActive(acc)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg-2 hover:text-fg"
+                      {acc.isActive ? "Đang hoạt động" : "Đã khóa"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span
+                      className={
+                        acc.hasPin
+                          ? "inline-flex items-center rounded-lg border border-line bg-canvas px-2.5 py-1 text-[11px] text-fg-2"
+                          : "inline-flex items-center rounded-lg border border-line bg-canvas px-2.5 py-1 text-[11px] text-fg-3"
+                      }
                     >
-                      {acc.isActive ? <Lock size={13} /> : <Unlock size={13} />}
-                      <span>{acc.isActive ? "Khóa" : "Mở khóa"}</span>
-                    </button>
+                      {acc.hasPin ? "Đã đặt PIN" : "Chưa đặt PIN"}
+                    </span>
+                  </div>
+
+                  {canEdit && (
+                    <div className="flex flex-wrap items-center gap-2 lg:grid lg:grid-cols-[114px_104px_92px_36px] lg:items-center lg:gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetTarget(acc);
+                          setCurrentPassword("");
+                          setNewPassword("");
+                        }}
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-line bg-elevated px-2.5 text-xs font-medium text-fg hover:border-line-strong"
+                      >
+                        <KeyRound size={13} />
+                        <span>Đổi mật khẩu</span>
+                      </button>
+
+                      {acc.hasPin ? (
+                        <button
+                          type="button"
+                          onClick={() => requestResetPin(acc)}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-line bg-elevated px-2.5 text-xs font-medium text-fg-2 hover:border-line-strong hover:text-fg"
+                        >
+                          <RotateCcw size={13} />
+                          <span>Đặt lại PIN</span>
+                        </button>
+                      ) : (
+                        <span className="hidden lg:block" aria-hidden />
+                      )}
+
+                      {acc.role !== "ADMIN" ? (
+                        <button
+                          type="button"
+                          onClick={() => requestToggleActive(acc)}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-line bg-elevated px-2.5 text-xs font-medium text-fg-2 hover:border-line-strong hover:text-fg"
+                        >
+                          {acc.isActive ? <Lock size={13} /> : <Unlock size={13} />}
+                          <span>{acc.isActive ? "Khóa" : "Mở khóa"}</span>
+                        </button>
+                      ) : (
+                        <span className="hidden lg:block" aria-hidden />
+                      )}
+
+                      {acc.id !== currentUserId ? (
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteAccount(acc)}
+                          aria-label={`Xóa tài khoản ${acc.username}`}
+                          className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      ) : (
+                        <span className="hidden lg:block" aria-hidden />
+                      )}
+                    </div>
                   )}
-                  {acc.id !== currentUserId && (
-                    <button
-                      type="button"
-                      onClick={() => requestDeleteAccount(acc)}
-                      aria-label={`Xóa tài khoản ${acc.username}`}
-                      className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  )}
-                </div>
-              )}
-            </m.div>
-          ))}
+                </m.div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
