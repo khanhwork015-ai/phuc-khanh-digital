@@ -3,7 +3,12 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = req.headers.get("host") ?? "";
   const hasSessionCookie = Boolean(req.cookies.get(SESSION_COOKIE_NAME)?.value);
+
+  if ((host.startsWith("admin.") || host.startsWith("duyet.")) && pathname === "/") {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
   const isProtected = pathname.startsWith("/dashboard") || pathname.startsWith("/portal");
   if (isProtected && !hasSessionCookie) {
@@ -16,5 +21,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/portal/:path*"],
+  matcher: ["/", "/dashboard/:path*", "/portal/:path*"],
 };

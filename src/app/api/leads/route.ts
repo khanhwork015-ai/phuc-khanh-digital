@@ -69,6 +69,31 @@ async function dispatchNotifications(lead: LeadFormValues): Promise<{ configured
     );
   }
 
+  const localIngestUrl = process.env.LOCAL_DASHBOARD_WEBHOOK_URL;
+  const syncKey = process.env.JAVIS_SYNC_API_KEY;
+  if (localIngestUrl && syncKey) {
+    tasks.push(
+      (async () => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        try {
+          const res = await fetch(localIngestUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${syncKey}`,
+            },
+            body: JSON.stringify(lead),
+            signal: controller.signal,
+          });
+          return res.ok;
+        } finally {
+          clearTimeout(timer);
+        }
+      })(),
+    );
+  }
+
   if (tasks.length === 0) return { configured: 0, delivered: 0 };
   const results = await Promise.allSettled(tasks);
   const delivered = results.filter((r) => r.status === "fulfilled" && r.value).length;

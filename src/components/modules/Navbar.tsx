@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -63,13 +63,6 @@ export function Navbar() {
         </ul>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/login"
-            className="hidden items-center gap-1.5 rounded-xl border border-line px-3.5 py-2 text-sm font-medium text-fg-2 transition-colors duration-200 hover:border-line-strong hover:text-fg sm:inline-flex"
-          >
-            <LogIn size={15} strokeWidth={1.6} aria-hidden="true" />
-            <span>Đăng nhập</span>
-          </Link>
           <ButtonLink href={siteConfig.cta.href} size="sm" className="hidden sm:inline-flex">
             {siteConfig.cta.label}
           </ButtonLink>
@@ -110,19 +103,9 @@ export function Navbar() {
                 </li>
               ))}
             </ul>
-            <div className="mt-5 flex flex-col gap-2.5">
-              <ButtonLink href={siteConfig.cta.href} onClick={() => setOpen(false)} className="w-full">
-                {siteConfig.cta.label}
-              </ButtonLink>
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-medium text-fg transition-colors hover:border-line-strong"
-              >
-                <LogIn size={16} strokeWidth={1.6} aria-hidden="true" />
-                <span>Đăng nhập tài khoản</span>
-              </Link>
-            </div>
+            <ButtonLink href={siteConfig.cta.href} onClick={() => setOpen(false)} className="mt-5 w-full">
+              {siteConfig.cta.label}
+            </ButtonLink>
           </m.div>
         )}
       </AnimatePresence>

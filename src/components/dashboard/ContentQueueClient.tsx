@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, RefreshCw, Send } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, MessageSquareWarning, RefreshCw, Send } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -34,6 +34,9 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
   const [syncInfo, setSyncInfo] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [feedbackId, setFeedbackId] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState("");
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     title: string;
@@ -69,25 +72,33 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
     void loadContent();
   }, []);
 
-  function requestStatusChange(item: ContentRow, nextStatus: string, label: string) {
+  function requestStatusChange(item: ContentRow, nextStatus: string, label: string, feedback?: string) {
     setConfirmState({
       open: true,
       title: `${label}: ${item.title}`,
-      description: `Cập nhật trạng thái bài "${item.javisItemId}" thành "${statusLabel[nextStatus] ?? nextStatus}" và ghi trực tiếp vào sổ _cho-duyet.md của Javis.`,
+      description: `Cập nhật trạng thái bài "${item.javisItemId}" thành "${statusLabel[nextStatus] ?? nextStatus}"${
+        feedback ? ` với ghi chú "${feedback}"` : ""
+      } và ghi trực tiếp vào sổ _cho-duyet.md của Javis.`,
       confirmLabel: label,
       errorMessage: null,
       action: async () => {
         const res = await fetch(`/api/admin/content/${item.id}/decision`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
+          body: JSON.stringify({ status: nextStatus, feedback }),
         });
         const data = (await res.json()) as { ok?: boolean; message?: string };
         if (!res.ok || !data.ok) {
           setConfirmState((prev) => (prev ? { ...prev, errorMessage: data.message ?? "Cập nhật thất bại." } : null));
           return;
         }
-        setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, status: nextStatus } : x)));
+        setItems((prev) =>
+          prev.map((x) =>
+            x.id === item.id ? { ...x, status: nextStatus, clientFeedback: feedback ?? x.clientFeedback } : x,
+          ),
+        );
+        setFeedbackId(null);
+        setFeedbackText("");
         setConfirmState(null);
       },
     });
@@ -119,6 +130,7 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
           { value: "pending_review", label: "Chờ duyệt (Nội bộ)" },
           { value: "pending_client", label: "Chờ khách duyệt" },
           { value: "approved", label: "Đã duyệt" },
+          { value: "changes_requested", label: "Cần sửa" },
           { value: "scheduled", label: "Chờ đăng" },
           { value: "published", label: "Đã đăng" },
         ].map((tab) => (
@@ -146,33 +158,46 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-line bg-surface/60 p-8 text-center text-sm text-fg-3">
-          Chưa có bài viết nào. Hãy cấu hình `JAVIS_FANPAGES_DIR` trong `.env.local` để tự động nạp từ `_cho-duyet.md`.
+          Chưa có bài viết nào phù hợp bộ lọc hiện tại.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          {filtered.map((item, idx) => (
-            <m.div
-              key={item.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.2), ease: easeOutExpo }}
-              className="rounded-2xl border border-line bg-surface/80 p-4 sm:p-5"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs text-accent">{item.customerName}</span>
-                    <span className="rounded-lg border border-line bg-canvas px-2 py-0.5 text-[11px] font-medium text-fg-2">
-                      {statusLabel[item.status] ?? item.status}
-                    </span>
+          {filtered.map((item, idx) => {
+            const isExpanded = expandedId === item.id;
+            return (
+              <m.div
+                key={item.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.2), ease: easeOutExpo }}
+                className="rounded-2xl border border-line bg-surface/80 p-4 sm:p-5"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs text-accent">{item.customerName}</span>
+                      <span className="rounded-lg border border-line bg-canvas px-2 py-0.5 text-[11px] font-medium text-fg-2">
+                        {statusLabel[item.status] ?? item.status}
+                      </span>
+                    </div>
+                    <h2 className="text-base font-semibold text-fg">{item.title}</h2>
+                    <p className="font-mono text-xs text-fg-3">{item.javisItemId}</p>
+                    {item.clientFeedback && (
+                      <p className="text-xs text-amber-300">Ghi chú: {item.clientFeedback}</p>
+                    )}
                   </div>
-                  <h2 className="text-base font-semibold text-fg">{item.title}</h2>
-                  <p className="font-mono text-xs text-fg-3">{item.javisItemId}</p>
-                </div>
 
-                {canEdit && (
-                  <div className="flex flex-wrap gap-2">
-                    {item.status === "pending_review" && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                      className="inline-flex h-9 items-center gap-1 rounded-xl border border-line bg-canvas px-3 text-xs font-medium text-fg-2 hover:text-fg"
+                    >
+                      <span>{isExpanded ? "Thu gọn" : "Xem nội dung"}</span>
+                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+
+                    {canEdit && item.status === "pending_review" && (
                       <button
                         type="button"
                         onClick={() => requestStatusChange(item, "pending_client", "Gửi khách duyệt")}
@@ -182,21 +207,87 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
                         <span>Gửi khách duyệt</span>
                       </button>
                     )}
-                    {(item.status === "pending_review" || item.status === "pending_client") && (
-                      <button
-                        type="button"
-                        onClick={() => requestStatusChange(item, "approved", "Chốt đã duyệt")}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
-                      >
-                        <CheckCircle2 size={13} />
-                        <span>Đánh dấu Đã duyệt</span>
-                      </button>
+                    {canEdit && (item.status === "pending_review" || item.status === "pending_client") && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => requestStatusChange(item, "approved", "Chốt đã duyệt")}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
+                        >
+                          <CheckCircle2 size={13} />
+                          <span>Đánh dấu Đã duyệt</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFeedbackId(feedbackId === item.id ? null : item.id);
+                            setFeedbackText("");
+                          }}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg-2 hover:text-fg"
+                        >
+                          <MessageSquareWarning size={13} />
+                          <span>Yêu cầu sửa</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="mt-4 space-y-3 border-t border-line pt-4">
+                    <p className="whitespace-pre-line text-sm leading-relaxed text-fg-2">{item.caption}</p>
+                    {item.mediaUrls.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {item.mediaUrls.map((url) => (
+                          <a
+                            key={url}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="overflow-hidden rounded-xl border border-line bg-canvas"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt={item.title} className="h-36 w-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
-              </div>
-            </m.div>
-          ))}
+
+                {canEdit && feedbackId === item.id && (
+                  <div className="mt-3 space-y-2 rounded-xl border border-line bg-canvas p-3">
+                    <textarea
+                      rows={2}
+                      value={feedbackText}
+                      onChange={(e) => setFeedbackText(e.target.value)}
+                      placeholder="Nhập yêu cầu chỉnh sửa để ghi vào _cho-duyet.md..."
+                      className="w-full rounded-lg border border-line bg-surface p-2.5 text-sm text-fg focus:border-accent focus:outline-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFeedbackId(null)}
+                        className="h-8 rounded-lg border border-line px-3 text-xs text-fg-2"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        disabled={feedbackText.trim().length < 3}
+                        onClick={() =>
+                          requestStatusChange(item, "changes_requested", "Gửi yêu cầu sửa", feedbackText.trim())
+                        }
+                        className="h-8 rounded-lg bg-accent px-3 text-xs font-semibold text-canvas disabled:opacity-50"
+                      >
+                        Xác nhận
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </m.div>
+            );
+          })}
         </div>
       )}
 
