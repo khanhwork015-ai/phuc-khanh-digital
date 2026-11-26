@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getSqliteDb } from "@/db/sqlite";
 import type { ContractStatus } from "@/db/types";
@@ -155,7 +155,73 @@ export async function syncFromJavisLocalDir(): Promise<{
     if (!seen.has(row.javis_item_id)) db.prepare("DELETE FROM content_items WHERE id = ?").run(row.id);
   }
 
+  syncBrandAssetsFromJavis(db, fanpagesDir, slugToCustomerId, now);
+
   return { enabled: true, customersSynced, contentSynced };
+}
+
+const BRAND_KEYWORDS = ["brand", "nhan-dien", "logo", "guideline", "palette", "mau", "font"];
+const POST_SUBDIRS = new Set(["posts", "bai-viet", "cho-duyet", "scheduled", "published"]);
+
+function syncBrandAssetsFromJavis(
+  db: ReturnType<typeof getSqliteDb>,
+  fanpagesDir: string,
+  slugToCustomerId: Map<string, string>,
+  now: string,
+) {
+  for (const [slug, customerId] of slugToCustomerId.entries()) {
+    const clientDir = path.join(fanpagesDir, slug);
+    if (!existsSync(clientDir)) continue;
+
+    try {
+      const entries = readdirSync(clientDir, { withFileTypes: true, recursive: true });
+      for (const entry of entries) {
+        if (!entry.isFile()) continue;
+        const fullPath = path.join(entry.parentPath, entry.name);
+        const relFromClient = path.relative(clientDir, fullPath).replace(/\\/g, "/");
+        const topSegment = relFromClient.split("/")[0]?.toLowerCase() ?? "";
+        if (POST_SUBDIRS.has(topSegment)) continue;
+
+        const lowerPath = relFromClient.toLowerCase();
+        const isBrandFile = BRAND_KEYWORDS.some((kw) => lowerPath.includes(kw));
+        if (!isBrandFile) continue;
+
+        const ext = path.extname(entry.name).toLowerCase();
+        if (![".md", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".svg"].includes(ext)) continue;
+
+        const relFromFanpages = path.relative(fanpagesDir, fullPath).replace(/\\/g, "/");
+        const fileUrl = `/api/local-media?path=${encodeURIComponent(relFromFanpages)}`;
+        const title = entry.name.replace(ext, "").replace(/[-_]+/g, " ").trim() || entry.name;
+        const assetType = ext === ".pdf" ? "pdf" : ext === ".md" ? "guideline" : "image";
+        const contentText = ext === ".md" ? readFileSync(fullPath, "utf8").slice(0, 8000) : null;
+        const metadataJson = JSON.stringify({
+          source: "javis",
+          relativePath: relFromClient,
+          content: contentText,
+        });
+
+        const existing = db
+          .prepare("SELECT id FROM brand_assets WHERE customer_id = ? AND file_url = ? LIMIT 1")
+          .get(customerId, fileUrl) as { id: string } | undefined;
+
+        if (existing) {
+          db.prepare("UPDATE brand_assets SET title = ?, asset_type = ?, metadata = ?, updated_at = ? WHERE id = ?").run(
+            title,
+            assetType,
+            metadataJson,
+            now,
+            existing.id,
+          );
+        } else {
+          db.prepare(
+            "INSERT INTO brand_assets (id, customer_id, title, asset_type, file_url, metadata, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          ).run(crypto.randomUUID(), customerId, title, assetType, fileUrl, metadataJson, now);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
 }
 
 export function upsertCustomerToJavisMarkdown(customer: {

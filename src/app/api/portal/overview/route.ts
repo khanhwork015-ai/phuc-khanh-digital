@@ -37,12 +37,29 @@ export async function GET() {
     return NextResponse.json({ ok: false, message: "Không tìm thấy hồ sơ khách hàng." }, { status: 404 });
   }
 
-  const assets = db
+  const rawAssets = db
     .prepare(
-      `SELECT id, title, asset_type AS assetType, file_url AS fileUrl, updated_at AS updatedAt
+      `SELECT id, title, asset_type AS assetType, file_url AS fileUrl, metadata, updated_at AS updatedAt
        FROM brand_assets WHERE customer_id = ? ORDER BY updated_at DESC`,
     )
-    .all(auth.user.customerId);
+    .all(auth.user.customerId) as Array<{
+    id: string;
+    title: string;
+    assetType: string;
+    fileUrl: string | null;
+    metadata: string | null;
+    updatedAt: string;
+  }>;
+
+  const assets = rawAssets.map((a) => {
+    let parsedMeta: Record<string, unknown> | null = null;
+    try {
+      parsedMeta = a.metadata ? (JSON.parse(a.metadata) as Record<string, unknown>) : null;
+    } catch {
+      parsedMeta = null;
+    }
+    return { ...a, metadata: parsedMeta };
+  });
 
   const slugRow = db
     .prepare("SELECT javis_client_slug AS slug FROM customers WHERE id = ? LIMIT 1")

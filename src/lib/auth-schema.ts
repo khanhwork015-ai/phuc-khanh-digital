@@ -33,11 +33,17 @@ export const createAccountSchema = z
     path: ["customerId"],
   });
 
-export const updateAccountSchema = z.object({
-  isActive: z.boolean().optional(),
-  newPassword: z
-    .string()
-    .min(8, "Mật khẩu mới tối thiểu 8 ký tự.")
-    .max(128, "Mật khẩu mới tối đa 128 ký tự.")
-    .optional(),
-});
+export const updateAccountSchema = z
+  .object({
+    isActive: z.boolean().optional(),
+    currentPassword: z.string().min(1, "Vui lòng nhập mật khẩu hiện tại.").optional(),
+    newPassword: z
+      .string()
+      .min(8, "Mật khẩu mới tối thiểu 8 ký tự.")
+      .max(128, "Mật khẩu mới tối đa 128 ký tự.")
+      .optional(),
+  })
+  .refine((data) => !data.newPassword || Boolean(data.currentPassword), {
+    message: "Vui lòng nhập mật khẩu hiện tại để xác nhận đổi mật khẩu.",
+    path: ["currentPassword"],
+  });
