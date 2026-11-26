@@ -1,8 +1,9 @@
 "use client";
 
-import { ExternalLink, FileText, Palette, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { ExternalLink, FileText, Palette, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { m } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ColorSwatches } from "@/components/ui/ColorSwatches";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SelectDropdown } from "@/components/ui/SelectDropdown";
 import { brandAssetTypes, type BrandAssetType } from "@/db/types";
@@ -15,7 +16,7 @@ type BrandAssetRow = {
   title: string;
   assetType: BrandAssetType;
   fileUrl: string | null;
-  metadata: { source?: string; relativePath?: string; content?: string | null } | null;
+  metadata: { source?: string; relativePath?: string; content?: string | null; colors?: string[] } | null;
   updatedAt: string;
   customerName: string;
   customerSlug: string | null;
@@ -41,12 +42,14 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
   const [customerFilter, setCustomerFilter] = useState<string>("all");
   const [previewAsset, setPreviewAsset] = useState<BrandAssetRow | null>(null);
 
-  const [showCreate, setShowCreate] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
+  const [editingAsset, setEditingAsset] = useState<BrandAssetRow | null>(null);
   const [newCustomerId, setNewCustomerId] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<BrandAssetType>("guideline");
   const [newUrl, setNewUrl] = useState("");
   const [newContent, setNewContent] = useState("");
+  const [newColorsText, setNewColorsText] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   const [confirmState, setConfirmState] = useState<{
@@ -85,11 +88,74 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
     [assets, customerFilter],
   );
 
-  function requestCreateAsset(e: React.FormEvent) {
+  function openCreateForm() {
+    setEditingAsset(null);
+    setNewCustomerId("");
+    setNewTitle("");
+    setNewType("guideline");
+    setNewUrl("");
+    setNewContent("");
+    setNewColorsText("");
+    setFormError(null);
+    setFormMode("create");
+  }
+
+  function openEditForm(asset: BrandAssetRow) {
+    setEditingAsset(asset);
+    setNewCustomerId(asset.customerId);
+    setNewTitle(asset.title);
+    setNewType(asset.assetType);
+    setNewUrl(asset.fileUrl ?? "");
+    setNewContent(asset.metadata?.content ?? "");
+    setNewColorsText((asset.metadata?.colors ?? []).join(", "));
+    setFormError(null);
+    setFormMode("edit");
+  }
+
+  function requestSubmitAsset(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
-    if (!newCustomerId || newTitle.trim().length < 2) {
-      setFormError("Vui lòng chọn khách hàng và nhập tên tài liệu.");
+    if (formMode === "create" && !newCustomerId) {
+      setFormError("Vui lòng chọn khách hàng.");
+      return;
+    }
+    if (newTitle.trim().length < 2) {
+      setFormError("Vui lòng nhập tên tài liệu (tối thiểu 2 ký tự).");
+      return;
+    }
+
+    if (formMode === "edit" && editingAsset) {
+      const target = editingAsset;
+      setConfirmState({
+        open: true,
+        title: `Lưu thay đổi "${newTitle.trim()}"`,
+        description: "Nội dung cập nhật sẽ hiển thị ngay cho Admin, Moderator và khách hàng trên Portal.",
+        confirmLabel: "Lưu thay đổi",
+        variant: "default",
+        errorMessage: null,
+        action: async () => {
+          const res = await fetch(`/api/admin/brand-assets/${target.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: newTitle.trim(),
+              assetType: newType,
+              fileUrl: newUrl.trim(),
+              content: newContent.trim(),
+              colorsText: newColorsText.trim(),
+            }),
+          });
+          const data = (await res.json()) as { ok?: boolean; message?: string };
+          if (!res.ok || !data.ok) {
+            setConfirmState((prev) => (prev ? { ...prev, errorMessage: data.message ?? "Cập nhật thất bại." } : null));
+            return;
+          }
+          setFormMode(null);
+          setEditingAsset(null);
+          setConfirmState(null);
+          await loadAll();
+        },
+      });
       return;
     }
 
@@ -111,6 +177,7 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
             assetType: newType,
             fileUrl: newUrl.trim(),
             content: newContent.trim(),
+            colorsText: newColorsText.trim(),
           }),
         });
         const data = (await res.json()) as { ok?: boolean; message?: string };
@@ -118,10 +185,7 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
           setConfirmState((prev) => (prev ? { ...prev, errorMessage: data.message ?? "Lưu thất bại." } : null));
           return;
         }
-        setShowCreate(false);
-        setNewTitle("");
-        setNewUrl("");
-        setNewContent("");
+        setFormMode(null);
         setConfirmState(null);
         await loadAll();
       },
@@ -169,10 +233,7 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
           {canEdit && (
             <button
               type="button"
-              onClick={() => {
-                setFormError(null);
-                setShowCreate(true);
-              }}
+              onClick={openCreateForm}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-canvas hover:bg-accent-hover"
             >
               <Plus size={16} />
@@ -287,6 +348,10 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
                 </div>
               </div>
 
+              {asset.metadata?.colors && asset.metadata.colors.length > 0 && (
+                <ColorSwatches colors={asset.metadata.colors} />
+              )}
+
               <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-3">
                 {asset.metadata?.content && (
                   <button
@@ -309,14 +374,25 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
                   </a>
                 )}
                 {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => requestDeleteAsset(asset)}
-                    aria-label={`Xóa ${asset.title}`}
-                    className="inline-flex size-8 items-center justify-center rounded-lg border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openEditForm(asset)}
+                      aria-label={`Chỉnh sửa ${asset.title}`}
+                      className="inline-flex h-8 items-center gap-1 rounded-lg border border-line bg-elevated px-2.5 text-xs font-medium text-fg hover:border-line-strong"
+                    >
+                      <Pencil size={12} />
+                      <span>Sửa</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => requestDeleteAsset(asset)}
+                      aria-label={`Xóa ${asset.title}`}
+                      className="inline-flex size-8 items-center justify-center rounded-lg border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </>
                 )}
               </div>
             </m.div>
@@ -350,28 +426,32 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
         </div>
       )}
 
-      {showCreate && canEdit && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      {formMode && canEdit && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <form
-            onSubmit={requestCreateAsset}
-            className="w-full max-w-md rounded-t-2xl border border-line bg-surface p-5 sm:rounded-2xl sm:p-6"
+            onSubmit={requestSubmitAsset}
+            className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 sm:rounded-2xl sm:p-6"
           >
-            <h2 className="text-lg font-semibold text-fg">Thêm tài liệu Nhận diện</h2>
+            <h2 className="text-lg font-semibold text-fg">
+              {formMode === "edit" ? `Chỉnh sửa: ${editingAsset?.title}` : "Thêm tài liệu Nhận diện"}
+            </h2>
             <div className="mt-4 space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-fg-2">Khách hàng *</label>
-                <SelectDropdown
-                  ariaLabel="Chọn khách hàng"
-                  value={newCustomerId}
-                  onChange={setNewCustomerId}
-                  placeholder="-- Chọn khách hàng --"
-                  options={customers.map((c) => ({
-                    value: c.id,
-                    label: `${c.code} - ${c.businessName}`,
-                    avatarText: c.businessName.charAt(0).toUpperCase(),
-                  }))}
-                />
-              </div>
+              {formMode === "create" && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Khách hàng *</label>
+                  <SelectDropdown
+                    ariaLabel="Chọn khách hàng"
+                    value={newCustomerId}
+                    onChange={setNewCustomerId}
+                    placeholder="-- Chọn khách hàng --"
+                    options={customers.map((c) => ({
+                      value: c.id,
+                      label: `${c.code} - ${c.businessName}`,
+                      avatarText: c.businessName.charAt(0).toUpperCase(),
+                    }))}
+                  />
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Loại tài liệu</label>
                 <SelectDropdown
@@ -401,6 +481,15 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
                 />
               </div>
               <div>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Mã màu thương hiệu (VD: #E9BE57, #09090B)</label>
+                <input
+                  value={newColorsText}
+                  onChange={(e) => setNewColorsText(e.target.value)}
+                  placeholder="#E9BE57, #09090B, #FAFAFA"
+                  className="h-10 w-full rounded-xl border border-line bg-canvas px-3 font-mono text-xs text-fg focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Nội dung mô tả / Quy chuẩn (tuỳ chọn)</label>
                 <textarea
                   rows={3}
@@ -421,7 +510,7 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setShowCreate(false)}
+                onClick={() => setFormMode(null)}
                 className="h-10 rounded-xl border border-line px-4 text-sm font-medium text-fg-2 hover:text-fg"
               >
                 Hủy
