@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { requireSessionApi } from "@/lib/api-auth";
+import {
+  customerActions,
+  customerCanSee,
+  engineTimeToIso,
+  listBridgePosts,
+  mapBridgeStatus,
+  mediaUrlFor,
+} from "@/lib/approval-bridge";
 import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 export async function GET() {
@@ -14,7 +22,7 @@ export async function GET() {
     );
   }
 
-  syncFromJavisLocalDir();
+  await syncFromJavisLocalDir();
   const db = getSqliteDb();
 
   const customer = db
@@ -36,30 +44,39 @@ export async function GET() {
     )
     .all(auth.user.customerId);
 
-  const rawItems = db
-    .prepare(
-      `SELECT id, title, caption, media_type AS mediaType, media_urls AS mediaUrlsJson,
-              status, client_feedback AS clientFeedback, scheduled_at AS scheduledAt,
-              published_at AS publishedAt, published_url AS publishedUrl
-       FROM content_items WHERE customer_id = ? ORDER BY updated_at DESC`,
-    )
-    .all(auth.user.customerId) as Array<{
-    id: string;
-    title: string;
-    caption: string;
-    mediaType: string;
-    mediaUrlsJson: string;
-    status: string;
-    clientFeedback: string | null;
-    scheduledAt: string | null;
-    publishedAt: string | null;
-    publishedUrl: string | null;
-  }>;
+  const slugRow = db
+    .prepare("SELECT javis_client_slug AS slug FROM customers WHERE id = ? LIMIT 1")
+    .get(auth.user.customerId) as { slug: string | null } | undefined;
+  const slug = slugRow?.slug ?? "";
 
-  const contentItems = rawItems.map((item) => ({
-    ...item,
-    mediaUrls: JSON.parse(item.mediaUrlsJson || "[]") as string[],
-  }));
+  const posts = slug ? (await listBridgePosts().catch(() => [])).filter((p) => p.fanpage_slug === slug) : [];
+  const rows = db
+    .prepare("SELECT id, javis_item_id AS file FROM content_items WHERE customer_id = ?")
+    .all(auth.user.customerId) as Array<{ id: string; file: string }>;
+  const idByFile = new Map(rows.map((r) => [r.file, r.id]));
+
+  const order = ["Chờ khách duyệt", "Sửa lại", "Đã duyệt", "Chờ đăng", "Đã đăng"];
+  const contentItems = posts
+    .filter((p) => customerCanSee(p) && idByFile.has(p.file))
+    .map((p) => ({
+      id: idByFile.get(p.file)!,
+      title: p.title,
+      caption: p.body,
+      mediaUrls: p.images.map(mediaUrlFor),
+      status: mapBridgeStatus(p.status) ?? "pending_review",
+      clientFeedback: p.edit_requested_by_role === "customer" ? p.feedback || null : null,
+      scheduledAt: engineTimeToIso(p.publish_at || p.scheduled_at),
+      publishedAt: engineTimeToIso(p.published_at),
+      publishedUrl: p.post_id ? `https://www.facebook.com/${p.post_id}` : null,
+      fanpageName: p.fanpage_name,
+      logoUrl: p.fanpage_logo ? mediaUrlFor(p.fanpage_logo) : null,
+      actions: customerActions(p),
+    }))
+    .sort((a, b) => {
+      const sa = posts.find((p) => idByFile.get(p.file) === a.id)?.status ?? "";
+      const sb = posts.find((p) => idByFile.get(p.file) === b.id)?.status ?? "";
+      return order.indexOf(sa) - order.indexOf(sb) || (b.scheduledAt ?? "").localeCompare(a.scheduledAt ?? "");
+    });
 
   return NextResponse.json({
     ok: true,

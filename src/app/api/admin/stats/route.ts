@@ -7,7 +7,7 @@ export async function GET() {
   const auth = await requireDashboardReadApi();
   if (!auth.ok) return auth.response;
 
-  const javisSync = syncFromJavisLocalDir();
+  const javisSync = await syncFromJavisLocalDir();
   const db = getSqliteDb();
 
   const totalCustomers = (db.prepare("SELECT count(*) AS c FROM customers").get() as { c: number }).c;

@@ -2,6 +2,7 @@
 
 import Lenis from "lenis";
 import { LazyMotion, MotionConfig } from "motion/react";
+import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef } from "react";
 import { getLenisOptions, readMotionEnv, SMOOTH_SCROLL_TOUCH } from "@/lib/motion-env";
 
@@ -18,8 +19,13 @@ export function useSmoothScroll() {
 
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
+  const pathname = usePathname() ?? "/";
+  // Smooth scrolling is a landing-page effect; inside the app (dashboard, portal, login)
+  // it swallows wheel events of popups and scrollable panels.
+  const appArea = /^\/(dashboard|portal|login)(\/|$)/.test(pathname);
 
   useEffect(() => {
+    if (appArea) return;
     const options = getLenisOptions(readMotionEnv(), SMOOTH_SCROLL_TOUCH);
     if (!options) return;
 
@@ -41,7 +47,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       lenis.destroy();
       lenisRef.current = null;
     };
-  }, []);
+  }, [appArea]);
 
   const scrollTo = useCallback<ScrollTo>((target) => {
     if (lenisRef.current) {

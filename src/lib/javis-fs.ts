@@ -1,58 +1,19 @@
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getSqliteDb } from "@/db/sqlite";
-import type { ContentStatus, ContractStatus } from "@/db/types";
+import type { ContractStatus } from "@/db/types";
 import {
-  parseApprovalQueueMarkdown,
+  type BridgePost,
+  engineTimeToIso,
+  listBridgePosts,
+  mapBridgeStatus,
+  mediaUrlFor,
+} from "@/lib/approval-bridge";
+import {
   parseCustomersMarkdown,
   removeCustomerRowInMarkdown,
-  updateApprovalRowInMarkdown,
   upsertCustomerRowInMarkdown,
 } from "@/lib/javis-markdown";
-
-function parseScheduledDate(raw: string): string | null {
-  if (!raw || raw === "-") return null;
-  const normalized = raw.trim().replace(" ", "T");
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString();
-}
-
-function findClientPostDetail(
-  fanpagesDir: string,
-  slug: string,
-  itemCode: string,
-): { caption: string; mediaUrls: string[] } {
-  const clientDir = path.join(fanpagesDir, slug);
-  if (!existsSync(clientDir)) {
-    return { caption: "", mediaUrls: [] };
-  }
-
-  let caption = "";
-  const mediaUrls: string[] = [];
-
-  try {
-    const entries = readdirSync(clientDir, { withFileTypes: true, recursive: true });
-    for (const entry of entries) {
-      if (!entry.isFile()) continue;
-      const fullPath = path.join(entry.parentPath, entry.name);
-      const relPath = path.relative(fanpagesDir, fullPath).replace(/\\/g, "/");
-      const lower = entry.name.toLowerCase();
-
-      if (!lower.includes(itemCode.toLowerCase())) continue;
-
-      if (lower.endsWith(".md") && !caption) {
-        caption = readFileSync(fullPath, "utf8").slice(0, 4000);
-      } else if (/\.(png|jpe?g|webp|gif|mp4|mov)$/.test(lower)) {
-        mediaUrls.push(`/api/local-media?path=${encodeURIComponent(relPath)}`);
-      }
-    }
-  } catch {
-    return { caption, mediaUrls };
-  }
-
-  return { caption, mediaUrls };
-}
 
 export function getJavisFanpagesDir(): string | null {
   const dir = process.env.JAVIS_FANPAGES_DIR?.trim();
@@ -60,11 +21,12 @@ export function getJavisFanpagesDir(): string | null {
   return path.resolve(dir);
 }
 
-export function syncFromJavisLocalDir(): {
+export async function syncFromJavisLocalDir(): Promise<{
   enabled: boolean;
   customersSynced: number;
   contentSynced: number;
-} {
+  error?: string;
+}> {
   const fanpagesDir = getJavisFanpagesDir();
   if (!fanpagesDir) {
     return { enabled: false, customersSynced: 0, contentSynced: 0 };
@@ -133,80 +95,67 @@ export function syncFromJavisLocalDir(): {
     }
   }
 
-  const queueFile = path.join(fanpagesDir, "_cho-duyet.md");
-  if (existsSync(queueFile)) {
-    const parsedItems = parseApprovalQueueMarkdown(readFileSync(queueFile, "utf8"));
-    for (const item of parsedItems) {
-      const slug = nameToSlug.get(item.fanpageName.toLowerCase());
-      const customerId = slug ? slugToCustomerId.get(slug) : undefined;
-      if (!customerId || !slug) continue;
+  // Posts: the frontmatter of each `bai-nhap/*.md` is the source of truth (read via the approval engine).
+  let posts: BridgePost[] = [];
+  try {
+    posts = await listBridgePosts();
+  } catch (err) {
+    console.error("[javis-fs] list posts failed:", err);
+    return { enabled: true, customersSynced, contentSynced, error: "Không đọc được danh sách bài từ Javis." };
+  }
+  const seen = new Set<string>();
+  for (const post of posts) {
+    const status = mapBridgeStatus(post.status);
+    const customerId = slugToCustomerId.get(post.fanpage_slug);
+    if (!status || !customerId) continue;
+    seen.add(post.file);
 
-      const detail = findClientPostDetail(fanpagesDir, slug, item.itemCode);
-      const caption = detail.caption || item.title;
-      const mediaUrlsJson = JSON.stringify(detail.mediaUrls);
-      const scheduledAt = parseScheduledDate(item.scheduledText);
+    const mediaUrlsJson = JSON.stringify(post.images.map(mediaUrlFor));
+    const scheduledAt = engineTimeToIso(post.publish_at || post.scheduled_at);
+    const publishedAt = engineTimeToIso(post.published_at);
+    const feedback = post.feedback || post.schedule_error || null;
 
-      const existingItem = db
-        .prepare("SELECT id FROM content_items WHERE javis_item_id = ? LIMIT 1")
-        .get(item.itemCode) as { id: string } | undefined;
+    const existingItem = db
+      .prepare("SELECT id FROM content_items WHERE javis_item_id = ? LIMIT 1")
+      .get(post.file) as { id: string } | undefined;
 
-      if (existingItem) {
-        db.prepare(
-          `UPDATE content_items
-           SET title = ?, caption = ?, media_urls = ?, status = ?, client_feedback = COALESCE(?, client_feedback), scheduled_at = ?, updated_at = ?
-           WHERE id = ?`,
-        ).run(
-          item.title,
-          caption,
-          mediaUrlsJson,
-          item.status,
-          item.notes || null,
-          scheduledAt,
-          now,
-          existingItem.id,
-        );
-      } else {
-        db.prepare(
-          `INSERT INTO content_items
-           (id, customer_id, javis_item_id, title, caption, media_type, media_urls, status, client_feedback, scheduled_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, 'image', ?, ?, ?, ?, ?)`,
-        ).run(
-          crypto.randomUUID(),
-          customerId,
-          item.itemCode,
-          item.title,
-          caption,
-          mediaUrlsJson,
-          item.status,
-          item.notes || null,
-          scheduledAt,
-          now,
-        );
-      }
-      contentSynced++;
+    if (existingItem) {
+      db.prepare(
+        `UPDATE content_items
+         SET customer_id = ?, title = ?, caption = ?, media_urls = ?, status = ?, client_feedback = ?,
+             scheduled_at = ?, published_at = ?, updated_at = ?
+         WHERE id = ?`,
+      ).run(customerId, post.title, post.body, mediaUrlsJson, status, feedback, scheduledAt, publishedAt, now, existingItem.id);
+    } else {
+      db.prepare(
+        `INSERT INTO content_items
+         (id, customer_id, javis_item_id, title, caption, media_type, media_urls, status, client_feedback, scheduled_at, published_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        crypto.randomUUID(),
+        customerId,
+        post.file,
+        post.title,
+        post.body,
+        post.images.length ? "image" : "text",
+        mediaUrlsJson,
+        status,
+        feedback,
+        scheduledAt,
+        publishedAt,
+        now,
+      );
     }
+    contentSynced++;
+  }
+
+  // Drop rows whose post file is gone (or rows from the old `_cho-duyet.md` keying by code).
+  const allRows = db.prepare("SELECT id, javis_item_id FROM content_items").all() as Array<{ id: string; javis_item_id: string }>;
+  for (const row of allRows) {
+    if (!seen.has(row.javis_item_id)) db.prepare("DELETE FROM content_items WHERE id = ?").run(row.id);
   }
 
   return { enabled: true, customersSynced, contentSynced };
-}
-
-export function writeApprovalDecisionToJavis(
-  javisItemId: string,
-  nextStatus: ContentStatus,
-  feedback?: string | null,
-): boolean {
-  const fanpagesDir = getJavisFanpagesDir();
-  if (!fanpagesDir) return false;
-
-  const queueFile = path.join(fanpagesDir, "_cho-duyet.md");
-  if (!existsSync(queueFile)) return false;
-
-  const raw = readFileSync(queueFile, "utf8");
-  const result = updateApprovalRowInMarkdown(raw, javisItemId, nextStatus, feedback);
-  if (result.updated) {
-    writeFileSync(queueFile, result.content, "utf8");
-  }
-  return result.updated;
 }
 
 export function upsertCustomerToJavisMarkdown(customer: {

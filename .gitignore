@@ -8,3 +8,7 @@ next-env.d.ts
 .superpowers
 .neon
 data/
+
+# local runtime
+server.log
+server.err.log

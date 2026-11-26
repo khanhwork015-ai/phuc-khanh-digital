@@ -2,24 +2,24 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSqliteDb } from "@/db/sqlite";
 import { requireSessionApi } from "@/lib/api-auth";
-import { writeApprovalDecisionToJavis } from "@/lib/javis-fs";
+import { decideBridgePost } from "@/lib/approval-bridge";
+import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 const decisionSchema = z
   .object({
-    decision: z.enum(["approved", "changes_requested"]),
-    clientFeedback: z.string().trim().max(1500, "Góp ý tối đa 1500 ký tự.").optional(),
+    action: z.enum(["approve", "request_edit"]),
+    feedback: z.string().trim().max(1500, "Góp ý tối đa 1500 ký tự.").optional(),
   })
-  .refine(
-    (data) => data.decision !== "changes_requested" || (data.clientFeedback && data.clientFeedback.length >= 3),
-    { message: "Vui lòng nhập nội dung cần chỉnh sửa (tối thiểu 3 ký tự)." },
-  );
+  .refine((d) => d.action !== "request_edit" || (d.feedback && d.feedback.length >= 3), {
+    message: "Vui lòng ghi rõ lý do cần chỉnh sửa (tối thiểu 3 ký tự).",
+  });
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireSessionApi();
   if (!auth.ok) return auth.response;
 
-  if (!auth.user.customerId) {
-    return NextResponse.json({ ok: false, message: "Không có hồ sơ khách hàng liên kết." }, { status: 403 });
+  if (auth.user.role !== "CUSTOMER" || !auth.user.customerId) {
+    return NextResponse.json({ ok: false, message: "Chỉ tài khoản khách hàng mới duyệt ở cổng này." }, { status: 403 });
   }
 
   const { id } = await params;
@@ -40,50 +40,34 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const db = getSqliteDb();
   const existing = db
-    .prepare("SELECT id, javis_item_id AS javisItemId FROM content_items WHERE id = ? AND customer_id = ? LIMIT 1")
-    .get(id, auth.user.customerId) as { id: string; javisItemId: string } | undefined;
+    .prepare(
+      `SELECT ci.javis_item_id AS file, c.javis_client_slug AS slug, c.business_name AS businessName
+       FROM content_items ci INNER JOIN customers c ON ci.customer_id = c.id
+       WHERE ci.id = ? AND ci.customer_id = ? LIMIT 1`,
+    )
+    .get(id, auth.user.customerId) as { file: string; slug: string | null; businessName: string } | undefined;
 
-  if (!existing) {
+  if (!existing || !existing.slug) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy bài viết thuộc tài khoản của bạn." }, { status: 404 });
   }
 
-  const feedback = parsed.data.decision === "changes_requested" ? parsed.data.clientFeedback ?? null : null;
-  const now = new Date().toISOString();
-
-  db.prepare("UPDATE content_items SET status = ?, client_feedback = ?, updated_at = ? WHERE id = ?").run(
-    parsed.data.decision,
-    feedback,
-    now,
-    id,
-  );
-
-  writeApprovalDecisionToJavis(existing.javisItemId, parsed.data.decision, feedback);
-
-  const updated = db
-    .prepare(
-      `SELECT id, title, caption, media_type AS mediaType, media_urls AS mediaUrlsJson,
-              status, client_feedback AS clientFeedback, scheduled_at AS scheduledAt,
-              published_at AS publishedAt, published_url AS publishedUrl
-       FROM content_items WHERE id = ?`,
-    )
-    .get(id) as {
-    id: string;
-    title: string;
-    caption: string;
-    mediaType: string;
-    mediaUrlsJson: string;
-    status: string;
-    clientFeedback: string | null;
-    scheduledAt: string | null;
-    publishedAt: string | null;
-    publishedUrl: string | null;
-  };
-
-  return NextResponse.json({
-    ok: true,
-    item: {
-      ...updated,
-      mediaUrls: JSON.parse(updated.mediaUrlsJson || "[]") as string[],
-    },
+  // The engine re-checks visibility and the allowed step (e.g. not before Admin approval).
+  const result = await decideBridgePost({
+    file: existing.file,
+    action: parsed.data.action,
+    actorRole: "customer",
+    actorUsername: auth.user.username,
+    actorName: `Khách ${existing.businessName}`,
+    actorFanpages: [existing.slug],
+    feedback: parsed.data.feedback,
   });
+  await syncFromJavisLocalDir();
+
+  if (!result.ok) {
+    return NextResponse.json(
+      { ok: false, message: result.error || result.message || "Thao tác thất bại." },
+      { status: result.forbidden ? 409 : 400 },
+    );
+  }
+  return NextResponse.json({ ok: true, message: result.message ?? "Đã ghi nhận." });
 }

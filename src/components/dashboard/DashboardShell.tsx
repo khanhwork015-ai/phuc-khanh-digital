@@ -4,6 +4,7 @@ import {
   BarChart3,
   ExternalLink,
   FileCheck2,
+  Globe,
   Inbox,
   KeyRound,
   LogOut,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Tổng quan", icon: BarChart3, exact: true },
   { href: "/dashboard/content", label: "Duyệt bài", icon: FileCheck2, exact: false },
+  { href: "/dashboard/fanpages", label: "Fanpages", icon: Globe, exact: false },
   { href: "/dashboard/leads", label: "Lead", icon: Inbox, exact: false },
   { href: "/dashboard/customers", label: "Khách hàng", icon: Users, exact: false },
   { href: "/dashboard/accounts", label: "Tài khoản", icon: KeyRound, exact: false },
@@ -92,15 +94,17 @@ export function DashboardShell({
           </div>
 
           <div className="space-y-2 border-t border-line pt-4">
-            <a
-              href={JAVIS_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-between rounded-xl border border-line bg-canvas/80 px-3.5 py-2.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
-            >
-              <span>Mở Javis OS (Nội bộ)</span>
-              <ExternalLink size={14} />
-            </a>
+            {role === "ADMIN" && (
+              <a
+                href={JAVIS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between rounded-xl border border-line bg-canvas/80 px-3.5 py-2.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+              >
+                <span>Mở Javis OS (Nội bộ)</span>
+                <ExternalLink size={14} />
+              </a>
+            )}
 
             <div className="flex items-center justify-between rounded-xl bg-elevated/60 px-3.5 py-2.5">
               <div className="min-w-0">
@@ -126,15 +130,17 @@ export function DashboardShell({
               <Logo />
             </Link>
             <div className="flex items-center gap-2">
-              <a
-                href={JAVIS_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs font-medium text-fg-2 hover:text-fg"
-              >
-                <span>Javis</span>
-                <ExternalLink size={12} />
-              </a>
+              {role === "ADMIN" && (
+                <a
+                  href={JAVIS_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs font-medium text-fg-2 hover:text-fg"
+                >
+                  <span>Javis</span>
+                  <ExternalLink size={12} />
+                </a>
+              )}
               <button
                 type="button"
                 onClick={handleLogout}
@@ -165,7 +171,7 @@ export function DashboardShell({
         aria-label="Điều hướng di động"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
-        <div className="grid grid-cols-5 gap-1 py-1.5">
+        <div className="grid grid-cols-6 gap-1 py-1.5">
           {navItems.map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;

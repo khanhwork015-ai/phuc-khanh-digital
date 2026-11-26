@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import type { UserRole } from "@/db/types";
-import { buildSessionCookieOptions, createSession, verifyPassword } from "@/lib/auth";
+import { buildSessionCookieOptions, createSession, hashPassword, verifyPassword } from "@/lib/auth";
+import { isLegacyPasswordHash } from "@/lib/password";
 import { loginSchema } from "@/lib/auth-schema";
 import { isDashboardRole } from "@/lib/permissions";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
@@ -69,6 +70,9 @@ export async function POST(req: Request) {
   const { token, expiresAt } = createSession(user.id);
   const now = new Date().toISOString();
   db.prepare("UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?").run(now, now, user.id);
+  if (isLegacyPasswordHash(user.password_hash)) {
+    db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(password), user.id);
+  }
 
   const redirectTo = isDashboardRole(user.role) ? "/dashboard" : "/portal";
   const response = NextResponse.json({

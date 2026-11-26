@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSqliteDb } from "@/db/sqlite";
-import { contentStatuses } from "@/db/types";
 import { requireAdminApi } from "@/lib/api-auth";
-import { writeApprovalDecisionToJavis } from "@/lib/javis-fs";
+import { decideBridgePost } from "@/lib/approval-bridge";
+import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
-const adminDecisionSchema = z.object({
-  status: z.enum(contentStatuses),
-  feedback: z.string().trim().max(1500).optional(),
-});
+const adminDecisionSchema = z
+  .object({
+    action: z.enum(["approve", "request_edit", "retry_schedule"]),
+    feedback: z.string().trim().max(1500, "Lý do tối đa 1500 ký tự.").optional(),
+  })
+  .refine((d) => d.action !== "request_edit" || (d.feedback && d.feedback.length >= 3), {
+    message: "Vui lòng ghi rõ lý do cần sửa (tối thiểu 3 ký tự).",
+  });
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
@@ -32,22 +36,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const db = getSqliteDb();
   const existing = db
-    .prepare("SELECT id, javis_item_id AS javisItemId FROM content_items WHERE id = ? LIMIT 1")
-    .get(id) as { id: string; javisItemId: string } | undefined;
-
+    .prepare("SELECT id, customer_id AS customerId, javis_item_id AS file FROM content_items WHERE id = ? LIMIT 1")
+    .get(id) as { id: string; customerId: string; file: string } | undefined;
   if (!existing) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy bài viết." }, { status: 404 });
   }
 
-  const now = new Date().toISOString();
-  db.prepare("UPDATE content_items SET status = ?, client_feedback = ?, updated_at = ? WHERE id = ?").run(
-    parsed.data.status,
-    parsed.data.feedback ?? null,
-    now,
-    id,
-  );
+  // The post goes to the customer only when that fanpage has an active customer account.
+  const customerAccount = db
+    .prepare("SELECT 1 FROM users WHERE role = 'CUSTOMER' AND is_active = 1 AND customer_id = ? LIMIT 1")
+    .get(existing.customerId);
 
-  writeApprovalDecisionToJavis(existing.javisItemId, parsed.data.status, parsed.data.feedback);
+  const result = await decideBridgePost({
+    file: existing.file,
+    action: parsed.data.action,
+    actorRole: "admin",
+    actorUsername: auth.user.username,
+    actorName: `Admin ${auth.user.username}`,
+    feedback: parsed.data.feedback,
+    needsCustomer: Boolean(customerAccount),
+  });
+  await syncFromJavisLocalDir();
 
-  return NextResponse.json({ ok: true, status: parsed.data.status });
+  if (!result.ok) {
+    return NextResponse.json(
+      { ok: false, message: result.error || result.message || "Thao tác thất bại." },
+      { status: result.forbidden ? 409 : 400 },
+    );
+  }
+  return NextResponse.json({ ok: true, message: result.message ?? "Đã cập nhật." });
 }

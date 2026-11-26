@@ -13,6 +13,7 @@ const mimeTypes: Record<string, string> = {
   ".mp4": "video/mp4",
   ".mov": "video/quicktime",
   ".pdf": "application/pdf",
+  ".svg": "image/svg+xml",
 };
 
 export async function GET(req: Request) {
@@ -40,7 +41,9 @@ export async function GET(req: Request) {
     status: 200,
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": "private, max-age=300",
+      "Cache-Control": "private, max-age=60",
+      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }
