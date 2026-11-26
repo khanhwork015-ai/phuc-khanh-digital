@@ -5,6 +5,11 @@ import { brandAssetTypes } from "@/db/types";
 import { requireCustomerManageApi } from "@/lib/api-auth";
 import { extractHexColors } from "@/lib/javis-fs";
 
+const pricingLineSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  price: z.string().trim().min(1).max(80),
+});
+
 const updateBrandAssetSchema = z.object({
   title: z.string().trim().min(2, "Vui lòng nhập tên tài liệu (tối thiểu 2 ký tự).").max(160).optional(),
   assetType: z.enum(brandAssetTypes).optional(),
@@ -17,6 +22,7 @@ const updateBrandAssetSchema = z.object({
   tone: z.string().trim().max(300).optional().or(z.literal("")),
   style: z.string().trim().max(300).optional().or(z.literal("")),
   avoidWordsText: z.string().trim().max(500).optional().or(z.literal("")),
+  pricingLines: z.array(pricingLineSchema).max(30).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -59,9 +65,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const nextContent = parsed.data.content !== undefined ? parsed.data.content || null : (prevMeta.content as string | null) ?? null;
   const nextColors =
-    parsed.data.colorsText !== undefined || parsed.data.content !== undefined
-      ? extractHexColors(`${parsed.data.colorsText ?? ""} ${nextContent ?? ""}`)
-      : ((prevMeta.colors as string[] | undefined) ?? []);
+    parsed.data.colorsText !== undefined
+      ? extractHexColors(parsed.data.colorsText)
+      : parsed.data.content !== undefined
+        ? extractHexColors(nextContent)
+        : ((prevMeta.colors as string[] | undefined) ?? []);
 
   const nextAvoidWords =
     parsed.data.avoidWordsText !== undefined
@@ -81,6 +89,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     tone: parsed.data.tone !== undefined ? parsed.data.tone || null : prevMeta.tone ?? null,
     style: parsed.data.style !== undefined ? parsed.data.style || null : prevMeta.style ?? null,
     avoidWords: nextAvoidWords,
+    pricingLines:
+      parsed.data.pricingLines !== undefined
+        ? parsed.data.pricingLines
+        : ((prevMeta.pricingLines as Array<{ name: string; price: string }> | undefined) ?? []),
   });
 
   const now = new Date().toISOString();

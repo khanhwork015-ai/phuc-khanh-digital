@@ -5,6 +5,11 @@ import { brandAssetTypes } from "@/db/types";
 import { requireCustomerManageApi, requireDashboardReadApi } from "@/lib/api-auth";
 import { extractHexColors, syncFromJavisLocalDir } from "@/lib/javis-fs";
 
+const pricingLineSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  price: z.string().trim().min(1).max(80),
+});
+
 const createBrandAssetSchema = z.object({
   customerId: z.string().uuid("Khách hàng không hợp lệ."),
   title: z.string().trim().min(2, "Vui lòng nhập tên tài liệu (tối thiểu 2 ký tự).").max(160),
@@ -18,6 +23,7 @@ const createBrandAssetSchema = z.object({
   tone: z.string().trim().max(300).optional().or(z.literal("")),
   style: z.string().trim().max(300).optional().or(z.literal("")),
   avoidWordsText: z.string().trim().max(500).optional().or(z.literal("")),
+  pricingLines: z.array(pricingLineSchema).max(30).optional(),
 });
 
 export async function GET() {
@@ -106,6 +112,7 @@ export async function POST(req: Request) {
     tone: parsed.data.tone || null,
     style: parsed.data.style || null,
     avoidWords,
+    pricingLines: parsed.data.pricingLines ?? [],
   });
 
   db.prepare(

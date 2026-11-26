@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ExternalLink, FileCheck2 } from "lucide-react";
+import { Check, ExternalLink, FileCheck2, Pencil } from "lucide-react";
 import { useState } from "react";
 
 export type BrandKitSummaryProps = {
@@ -16,6 +16,7 @@ export type BrandKitSummaryProps = {
   avoidWords?: string[];
   pricingLines?: Array<{ name: string; price: string }>;
   colors?: string[];
+  onEdit?: () => void;
 };
 
 export function BrandKitSummary({
@@ -31,6 +32,7 @@ export function BrandKitSummary({
   avoidWords = [],
   pricingLines = [],
   colors = [],
+  onEdit,
 }: BrandKitSummaryProps) {
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
 
@@ -64,7 +66,19 @@ export function BrandKitSummary({
             Hồ sơ thương hiệu · <span className="font-semibold text-fg">{brandName}</span>
           </p>
         </div>
-        <span className="shrink-0 font-mono text-xs text-fg-3">{brandCode || "riêng biệt"}</span>
+        <div className="flex shrink-0 items-center gap-2.5">
+          <span className="font-mono text-xs text-fg-3">{brandCode || "riêng biệt"}</span>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-line bg-canvas px-2.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-accent hover:text-accent"
+            >
+              <Pencil size={12} />
+              <span>Chỉnh sửa</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="divide-y divide-line px-5 sm:px-6">
