@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, FileText, LogOut, Palette, Sparkles, X } from "lucide-react";
+import { LogOut, Palette, Sparkles } from "lucide-react";
 import { m } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import { useEffect, useMemo, useState } from "react";
 import { formatPostTime } from "@/components/content/FacebookPostPreview";
 import { PostReviewModal, type ReviewAction } from "@/components/content/PostReviewModal";
 import { BrandKitSummary } from "@/components/ui/BrandKitSummary";
-import { ColorSwatches } from "@/components/ui/ColorSwatches";
 import { Logo } from "@/components/ui/Logo";
 import { leadPlanLabels, type LeadPlanValue } from "@/lib/lead-fields";
 import { easeOutExpo } from "@/lib/theme";
@@ -38,6 +37,7 @@ type PortalOverview = {
       tone?: string | null;
       style?: string | null;
       avoidWords?: string[];
+      pricingLines?: Array<{ name: string; price: string }>;
     } | null;
     updatedAt: string;
   }>;
@@ -74,7 +74,6 @@ export function PortalClient({ username }: { username: string }) {
   const [activeTab, setActiveTab] = useState<"content" | "brand">("content");
   const [contentFilter, setContentFilter] = useState<"pending" | "approved" | "published" | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [previewBrand, setPreviewBrand] = useState<PortalOverview["brandAssets"][number] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   async function loadOverview(quiet = false) {
@@ -331,91 +330,17 @@ export function PortalClient({ username }: { username: string }) {
                   tone={data.brandAssets.find((a) => a.metadata?.tone)?.metadata?.tone ?? null}
                   style={data.brandAssets.find((a) => a.metadata?.style)?.metadata?.style ?? null}
                   avoidWords={Array.from(new Set(data.brandAssets.flatMap((a) => a.metadata?.avoidWords ?? [])))}
+                  pricingLines={
+                    data.brandAssets.find((a) => (a.metadata?.pricingLines?.length ?? 0) > 0)?.metadata
+                      ?.pricingLines ?? []
+                  }
                   colors={Array.from(new Set(data.brandAssets.flatMap((a) => a.metadata?.colors ?? [])))}
                 />
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {data.brandAssets.map((asset) => (
-                    <div key={asset.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-surface/80 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          {asset.assetType === "image" && asset.fileUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={asset.fileUrl}
-                              alt={asset.title}
-                              className="size-10 shrink-0 rounded-xl border border-line bg-white object-cover"
-                            />
-                          ) : (
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                              <FileText size={18} />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-fg">{asset.title}</p>
-                            <p className="font-mono text-[11px] uppercase text-fg-3">{asset.assetType}</p>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {asset.metadata?.content && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewBrand(asset)}
-                              className="inline-flex h-9 items-center rounded-xl border border-line bg-canvas px-3 text-xs font-medium text-fg hover:border-line-accent hover:text-accent"
-                            >
-                              Xem
-                            </button>
-                          )}
-                          {asset.fileUrl && (
-                            <a
-                              href={asset.fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex h-9 items-center gap-1 rounded-xl border border-line px-3 text-xs font-medium text-fg-2 hover:text-fg"
-                            >
-                              <span>Mở</span>
-                              <ExternalLink size={13} />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      {asset.metadata?.colors && asset.metadata.colors.length > 0 && (
-                        <ColorSwatches colors={asset.metadata.colors} />
-                      )}
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </div>
         )}
       </main>
-
-      {previewBrand && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-line-strong bg-surface sm:rounded-2xl">
-            <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
-              <div>
-                <span className="font-mono text-xs text-accent">Bộ nhận diện thương hiệu</span>
-                <h2 className="mt-0.5 text-base font-semibold text-fg">{previewBrand.title}</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPreviewBrand(null)}
-                aria-label="Đóng"
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-line text-fg-2 hover:text-fg"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="overflow-y-auto p-5">
-              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-fg-2">
-                {previewBrand.metadata?.content}
-              </pre>
-            </div>
-          </div>
-        </div>
-      )}
 
       {selected && (
         <PostReviewModal
