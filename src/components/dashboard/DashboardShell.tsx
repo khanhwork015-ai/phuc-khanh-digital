@@ -173,7 +173,7 @@ export function DashboardShell({
         aria-label="Điều hướng di động"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
-        <div className="grid grid-cols-6 gap-1 py-1.5">
+        <div className="flex items-center gap-1 overflow-x-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-7 sm:overflow-visible">
           {navItems.map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
@@ -182,11 +182,11 @@ export function DashboardShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition-colors",
-                  active ? "text-accent" : "text-fg-3 hover:text-fg",
+                  "flex min-w-[72px] shrink-0 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors sm:min-w-0",
+                  active ? "bg-accent-muted/60 text-accent" : "text-fg-3 hover:text-fg",
                 )}
               >
-                <Icon size={18} strokeWidth={active ? 2 : 1.6} />
+                <Icon size={17} strokeWidth={active ? 2 : 1.6} />
                 <span>{item.label}</span>
               </Link>
             );
