@@ -143,3 +143,79 @@ export function updateApprovalRowInMarkdown(
 
   return { updated, content: lines.join("\n") };
 }
+
+export function upsertCustomerRowInMarkdown(
+  markdown: string,
+  customer: {
+    slug: string;
+    businessName: string;
+    pageId?: string | null;
+    contractStatus: ContractStatus;
+    contractSummary?: string | null;
+    owner?: string | null;
+    notes?: string | null;
+  },
+): { updated: boolean; content: string } {
+  let found = false;
+  let maxStt = 0;
+
+  const lines = markdown.split(/\r?\n/);
+  const nextLines = lines.map((line) => {
+    const cells = splitMarkdownRow(line);
+    if (cells.length < 8 || isSeparatorRow(cells) || cells[0].toLowerCase() === "stt") {
+      return line;
+    }
+    const sttNum = Number.parseInt(cells[0], 10);
+    if (!Number.isNaN(sttNum) && sttNum > maxStt) maxStt = sttNum;
+
+    if (stripBackticks(cells[1]) !== customer.slug) return line;
+
+    found = true;
+    cells[2] = customer.businessName.replace(/\|/g, "/");
+    if (customer.pageId !== undefined) {
+      cells[3] = customer.pageId ? `\`${customer.pageId}\`` : "-";
+    }
+    cells[4] = `\`${customer.contractStatus}\``;
+    if (customer.contractSummary) {
+      cells[5] = customer.contractSummary.replace(/\|/g, "/");
+    }
+    if (customer.notes !== undefined) {
+      cells[7] = customer.notes?.trim() ? customer.notes.trim().replace(/\|/g, "/") : "-";
+    }
+    return `| ${cells.join(" | ")} |`;
+  });
+
+  if (!found) {
+    const newRow = `| ${maxStt + 1} | \`${customer.slug}\` | ${customer.businessName.replace(/\|/g, "/")} | ${
+      customer.pageId ? `\`${customer.pageId}\`` : "-"
+    } | \`${customer.contractStatus}\` | ${(customer.contractSummary || "-").replace(/\|/g, "/")} | \`${
+      customer.owner || "web-dashboard"
+    }\` | ${(customer.notes || "-").replace(/\|/g, "/")} |`;
+    if (nextLines.length > 0 && nextLines[nextLines.length - 1] === "") {
+      nextLines.splice(nextLines.length - 1, 0, newRow);
+    } else {
+      nextLines.push(newRow);
+    }
+  }
+
+  return { updated: true, content: nextLines.join("\n") };
+}
+
+export function removeCustomerRowInMarkdown(
+  markdown: string,
+  slug: string,
+): { removed: boolean; content: string } {
+  let removed = false;
+  const lines = markdown.split(/\r?\n/).filter((line) => {
+    const cells = splitMarkdownRow(line);
+    if (cells.length < 8 || isSeparatorRow(cells) || cells[0].toLowerCase() === "stt") {
+      return true;
+    }
+    if (stripBackticks(cells[1]) === slug) {
+      removed = true;
+      return false;
+    }
+    return true;
+  });
+  return { removed, content: lines.join("\n") };
+}

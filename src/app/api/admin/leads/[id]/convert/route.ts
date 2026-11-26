@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { convertLeadSchema } from "@/lib/admin-schemas";
 import { requireAdminApi } from "@/lib/api-auth";
+import { upsertCustomerToJavisMarkdown } from "@/lib/javis-fs";
+import { leadPlanLabels, type LeadPlanValue } from "@/lib/lead-fields";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
@@ -46,6 +48,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const customerId = crypto.randomUUID();
   const code = `PKD-${Date.now().toString(36).toUpperCase().slice(-6)}`;
   const now = new Date().toISOString();
+  const slug =
+    parsed.data.javisClientSlug ||
+    parsed.data.businessName
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") ||
+    code.toLowerCase();
 
   try {
     db.exec("BEGIN");
@@ -56,7 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     ).run(
       customerId,
       code,
-      parsed.data.javisClientSlug || null,
+      slug,
       lead.full_name,
       parsed.data.businessName,
       lead.phone,
@@ -74,6 +85,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       id,
     );
     db.exec("COMMIT");
+
+    upsertCustomerToJavisMarkdown({
+      slug,
+      businessName: parsed.data.businessName,
+      contractStatus: "active",
+      contractSummary: leadPlanLabels[lead.plan as LeadPlanValue] ?? lead.plan,
+      notes: lead.note || null,
+    });
   } catch (err) {
     db.exec("ROLLBACK");
     console.error("[convert-lead] Lỗi:", err);

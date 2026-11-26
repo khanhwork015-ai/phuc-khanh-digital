@@ -3,7 +3,9 @@ import test from "node:test";
 import {
   parseApprovalQueueMarkdown,
   parseCustomersMarkdown,
+  removeCustomerRowInMarkdown,
   updateApprovalRowInMarkdown,
+  upsertCustomerRowInMarkdown,
 } from "./javis-markdown.ts";
 
 const sampleCustomersMd = `---
@@ -56,4 +58,28 @@ test("parseApprovalQueueMarkdown và updateApprovalRowInMarkdown xử lý đúng
   assert.equal(updated.updated, true);
   assert.match(updated.content, /`Đã duyệt`/);
   assert.match(updated.content, /OK đăng 20:30 nhé/);
+});
+
+test("upsertCustomerRowInMarkdown và removeCustomerRowInMarkdown đồng bộ 2 chiều _khach-hang.md", () => {
+  const added = upsertCustomerRowInMarkdown(sampleCustomersMd, {
+    slug: "tiem-banh-an",
+    businessName: "Tiệm Bánh An",
+    contractStatus: "active",
+    contractSummary: "Gói Tăng Trưởng",
+    notes: "Ký offline",
+  });
+  assert.equal(added.updated, true);
+  assert.match(added.content, /\| 2 \| `tiem-banh-an` \| Tiệm Bánh An \|/);
+
+  const modified = upsertCustomerRowInMarkdown(added.content, {
+    slug: "tiem-banh-an",
+    businessName: "Tiệm Bánh An Pro",
+    contractStatus: "paused",
+  });
+  assert.match(modified.content, /Tiệm Bánh An Pro/);
+  assert.match(modified.content, /`paused`/);
+
+  const removed = removeCustomerRowInMarkdown(modified.content, "tiem-banh-an");
+  assert.equal(removed.removed, true);
+  assert.doesNotMatch(removed.content, /tiem-banh-an/);
 });

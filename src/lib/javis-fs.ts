@@ -1,11 +1,13 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getSqliteDb } from "@/db/sqlite";
-import type { ContentStatus } from "@/db/types";
+import type { ContentStatus, ContractStatus } from "@/db/types";
 import {
   parseApprovalQueueMarkdown,
   parseCustomersMarkdown,
+  removeCustomerRowInMarkdown,
   updateApprovalRowInMarkdown,
+  upsertCustomerRowInMarkdown,
 } from "@/lib/javis-markdown";
 
 function parseScheduledDate(raw: string): string | null {
@@ -205,4 +207,41 @@ export function writeApprovalDecisionToJavis(
     writeFileSync(queueFile, result.content, "utf8");
   }
   return result.updated;
+}
+
+export function upsertCustomerToJavisMarkdown(customer: {
+  slug: string;
+  businessName: string;
+  pageId?: string | null;
+  contractStatus: ContractStatus;
+  contractSummary?: string | null;
+  notes?: string | null;
+}): boolean {
+  const fanpagesDir = getJavisFanpagesDir();
+  if (!fanpagesDir) return false;
+
+  const customersFile = path.join(fanpagesDir, "_khach-hang.md");
+  if (!existsSync(customersFile)) return false;
+
+  const raw = readFileSync(customersFile, "utf8");
+  const result = upsertCustomerRowInMarkdown(raw, customer);
+  if (result.updated) {
+    writeFileSync(customersFile, result.content, "utf8");
+  }
+  return result.updated;
+}
+
+export function removeCustomerFromJavisMarkdown(slug: string): boolean {
+  const fanpagesDir = getJavisFanpagesDir();
+  if (!fanpagesDir) return false;
+
+  const customersFile = path.join(fanpagesDir, "_khach-hang.md");
+  if (!existsSync(customersFile)) return false;
+
+  const raw = readFileSync(customersFile, "utf8");
+  const result = removeCustomerRowInMarkdown(raw, slug);
+  if (result.removed) {
+    writeFileSync(customersFile, result.content, "utf8");
+  }
+  return result.removed;
 }

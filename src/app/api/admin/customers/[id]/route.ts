@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
+import type { ContractStatus } from "@/db/types";
 import { updateCustomerSchema } from "@/lib/admin-schemas";
 import { requireCustomerManageApi } from "@/lib/api-auth";
+import { removeCustomerFromJavisMarkdown, upsertCustomerToJavisMarkdown } from "@/lib/javis-fs";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireCustomerManageApi();
@@ -73,7 +75,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
          plan, source, contract_status AS contractStatus, monthly_fee AS monthlyFee, notes
          FROM customers WHERE id = ?`,
       )
-      .get(id);
+      .get(id) as {
+      javisClientSlug: string | null;
+      pageId: string | null;
+      businessName: string;
+      contractStatus: ContractStatus;
+      notes: string | null;
+    };
+
+    if (updated.javisClientSlug) {
+      upsertCustomerToJavisMarkdown({
+        slug: updated.javisClientSlug,
+        businessName: updated.businessName,
+        pageId: updated.pageId,
+        contractStatus: updated.contractStatus,
+        notes: updated.notes,
+      });
+    }
 
     return NextResponse.json({ ok: true, customer: updated });
   } catch {
@@ -90,9 +108,16 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const db = getSqliteDb();
+  const existing = db
+    .prepare("SELECT javis_client_slug AS slug FROM customers WHERE id = ?")
+    .get(id) as { slug: string | null } | undefined;
+
   const res = db.prepare("DELETE FROM customers WHERE id = ?").run(id);
   if (res.changes === 0) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy khách hàng." }, { status: 404 });
+  }
+  if (existing?.slug) {
+    removeCustomerFromJavisMarkdown(existing.slug);
   }
   return NextResponse.json({ ok: true });
 }

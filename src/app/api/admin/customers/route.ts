@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { createCustomerSchema } from "@/lib/admin-schemas";
+import type { ContractStatus } from "@/db/types";
 import { requireCustomerManageApi, requireDashboardReadApi } from "@/lib/api-auth";
-import { syncFromJavisLocalDir } from "@/lib/javis-fs";
+import { syncFromJavisLocalDir, upsertCustomerToJavisMarkdown } from "@/lib/javis-fs";
+import { leadPlanLabels } from "@/lib/lead-fields";
 
 const selectCols = `
   id,
@@ -54,6 +56,15 @@ export async function POST(req: Request) {
   const id = crypto.randomUUID();
   const code = `PKD-${Date.now().toString(36).toUpperCase().slice(-6)}`;
   const now = new Date().toISOString();
+  const slug =
+    parsed.data.javisClientSlug ||
+    parsed.data.businessName
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") ||
+    code.toLowerCase();
 
   try {
     db.prepare(
@@ -63,7 +74,7 @@ export async function POST(req: Request) {
     ).run(
       id,
       code,
-      parsed.data.javisClientSlug || null,
+      slug,
       parsed.data.fullName,
       parsed.data.businessName,
       parsed.data.phone,
@@ -77,6 +88,14 @@ export async function POST(req: Request) {
       now,
       now,
     );
+
+    upsertCustomerToJavisMarkdown({
+      slug,
+      businessName: parsed.data.businessName,
+      contractStatus: parsed.data.contractStatus as ContractStatus,
+      contractSummary: leadPlanLabels[parsed.data.plan],
+      notes: parsed.data.notes || null,
+    });
 
     const customer = db.prepare(`SELECT ${selectCols} FROM customers WHERE id = ?`).get(id);
     return NextResponse.json({ ok: true, customer }, { status: 201 });
