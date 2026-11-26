@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Palette, Sparkles } from "lucide-react";
+import { ExternalLink, LogOut, Palette, Sparkles } from "lucide-react";
 import { m } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
