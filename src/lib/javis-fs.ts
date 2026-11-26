@@ -165,7 +165,17 @@ export async function syncFromJavisLocalDir(): Promise<{
 }
 
 const BRAND_KEYWORDS = ["brand", "nhan-dien", "logo", "guideline", "palette", "mau", "font", "ho-so"];
-const POST_SUBDIRS = new Set(["posts", "bai-viet", "cho-duyet", "scheduled", "published"]);
+const POST_SUBDIRS = new Set([
+  "posts",
+  "bai-viet",
+  "bai-nhap",
+  "da-lam-sach",
+  "da-dang",
+  "cho-duyet",
+  "cho-khach-duyet",
+  "scheduled",
+  "published",
+]);
 
 export function extractHexColors(text: string | null | undefined): string[] {
   if (!text) return [];
@@ -232,6 +242,22 @@ function syncBrandAssetsFromJavis(
   logoBySlug: Map<string, string>,
   now: string,
 ) {
+  const existingJavisAssets = db
+    .prepare("SELECT id, metadata FROM brand_assets")
+    .all() as Array<{ id: string; metadata: string | null }>;
+  for (const row of existingJavisAssets) {
+    if (!row.metadata) continue;
+    try {
+      const meta = JSON.parse(row.metadata) as { source?: string; relativePath?: string };
+      const top = meta.relativePath?.split("/")[0]?.toLowerCase() ?? "";
+      if (meta.source === "javis" && POST_SUBDIRS.has(top)) {
+        db.prepare("DELETE FROM brand_assets WHERE id = ?").run(row.id);
+      }
+    } catch {
+      continue;
+    }
+  }
+
   for (const [slug, customerId] of slugToCustomerId.entries()) {
     const bridgeLogo = logoBySlug.get(slug);
     if (bridgeLogo) {

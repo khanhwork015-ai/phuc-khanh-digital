@@ -107,32 +107,35 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
     [assets, customerFilter],
   );
 
-  const selectedCustomer = useMemo(
-    () => (customerFilter === "all" ? null : customers.find((c) => c.id === customerFilter) ?? null),
-    [customers, customerFilter],
-  );
+  const brandSummaries = useMemo(() => {
+    const targetCustomers =
+      customerFilter === "all" ? customers : customers.filter((c) => c.id === customerFilter);
 
-  const selectedBrandSummary = useMemo(() => {
-    if (!selectedCustomer) return null;
-    const customerAssets = assets.filter((a) => a.customerId === selectedCustomer.id);
-    const logoAsset = customerAssets.find((a) => a.assetType === "image" && a.fileUrl);
-    const allColors = Array.from(new Set(customerAssets.flatMap((a) => a.metadata?.colors ?? [])));
-    return {
-      brandName: selectedCustomer.businessName,
-      brandCode: selectedCustomer.code,
-      logoUrl: logoAsset?.fileUrl ?? null,
-      logoLabel: logoAsset?.title ?? null,
-      hotline:
-        customerAssets.find((a) => a.metadata?.hotline)?.metadata?.hotline ??
-        (selectedCustomer.phone && selectedCustomer.phone !== "Chưa cập nhật" ? selectedCustomer.phone : null),
-      address: customerAssets.find((a) => a.metadata?.address)?.metadata?.address ?? null,
-      pronouns: customerAssets.find((a) => a.metadata?.pronouns)?.metadata?.pronouns ?? null,
-      tone: customerAssets.find((a) => a.metadata?.tone)?.metadata?.tone ?? null,
-      style: customerAssets.find((a) => a.metadata?.style)?.metadata?.style ?? null,
-      avoidWords: Array.from(new Set(customerAssets.flatMap((a) => a.metadata?.avoidWords ?? []))),
-      colors: allColors,
-    };
-  }, [selectedCustomer, assets]);
+    return targetCustomers
+      .map((customer) => {
+        const customerAssets = assets.filter((a) => a.customerId === customer.id);
+        if (customerFilter === "all" && customerAssets.length === 0) return null;
+        const logoAsset = customerAssets.find((a) => a.assetType === "image" && a.fileUrl);
+        const allColors = Array.from(new Set(customerAssets.flatMap((a) => a.metadata?.colors ?? [])));
+        return {
+          customerId: customer.id,
+          brandName: customer.businessName,
+          brandCode: customer.code,
+          logoUrl: logoAsset?.fileUrl ?? null,
+          logoLabel: logoAsset?.title ?? null,
+          hotline:
+            customerAssets.find((a) => a.metadata?.hotline)?.metadata?.hotline ??
+            (customer.phone && customer.phone !== "Chưa cập nhật" ? customer.phone : null),
+          address: customerAssets.find((a) => a.metadata?.address)?.metadata?.address ?? null,
+          pronouns: customerAssets.find((a) => a.metadata?.pronouns)?.metadata?.pronouns ?? null,
+          tone: customerAssets.find((a) => a.metadata?.tone)?.metadata?.tone ?? null,
+          style: customerAssets.find((a) => a.metadata?.style)?.metadata?.style ?? null,
+          avoidWords: Array.from(new Set(customerAssets.flatMap((a) => a.metadata?.avoidWords ?? []))),
+          colors: allColors,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }, [customers, customerFilter, assets]);
 
   function openCreateForm() {
     setEditingAsset(null);
@@ -370,20 +373,25 @@ export function BrandAssetsClient({ canEdit = false }: { canEdit?: boolean }) {
         />
       </div>
 
-      {selectedBrandSummary && (
-        <BrandKitSummary
-          brandName={selectedBrandSummary.brandName}
-          brandCode={selectedBrandSummary.brandCode}
-          logoUrl={selectedBrandSummary.logoUrl}
-          logoLabel={selectedBrandSummary.logoLabel}
-          hotline={selectedBrandSummary.hotline}
-          address={selectedBrandSummary.address}
-          pronouns={selectedBrandSummary.pronouns}
-          tone={selectedBrandSummary.tone}
-          style={selectedBrandSummary.style}
-          avoidWords={selectedBrandSummary.avoidWords}
-          colors={selectedBrandSummary.colors}
-        />
+      {brandSummaries.length > 0 && (
+        <div className="space-y-4">
+          {brandSummaries.map((summary) => (
+            <BrandKitSummary
+              key={summary.customerId}
+              brandName={summary.brandName}
+              brandCode={summary.brandCode}
+              logoUrl={summary.logoUrl}
+              logoLabel={summary.logoLabel}
+              hotline={summary.hotline}
+              address={summary.address}
+              pronouns={summary.pronouns}
+              tone={summary.tone}
+              style={summary.style}
+              avoidWords={summary.avoidWords}
+              colors={summary.colors}
+            />
+          ))}
+        </div>
       )}
 
       {loading ? (
