@@ -1,3 +1,5 @@
+import { hoaSuaPost } from "./site-config";
+
 export type ShowcaseTab = "caption" | "visual";
 
 export type CaptionSample = {
@@ -39,7 +41,7 @@ export const showcaseContent = {
   title: "Khác biệt nhìn thấy ngay trên từng câu chữ và khung hình",
   description:
     "So sánh trực tiếp một bài viết mẫu rập khuôn với bài đã biên tập 2 lượt theo hồ sơ thương hiệu riêng, cùng cách đặt logo gốc đúng vùng an toàn.",
-  note: "Các thương hiệu trong phần này là ví dụ minh họa cách biên tập, không phải khách hàng thật.",
+  note: "Bài Hoa Sữa sử dụng nội dung và hình ảnh tham chiếu được cung cấp. Bản trước biên tập và các thương hiệu còn lại là ví dụ minh họa.",
   tabs: [
     { key: "caption" as const, label: "So sánh Caption" },
     { key: "visual" as const, label: "Ảnh gắn Logo gốc" },
@@ -48,25 +50,25 @@ export const showcaseContent = {
 
 export const captionSamples: CaptionSample[] = [
   {
-    id: "bakery",
-    industry: "Tiệm bánh thủ công",
-    brandName: "Tiệm Bánh Mộc An",
+    id: "hoa-sua",
+    industry: "Cà phê & trà",
+    brandName: hoaSuaPost.pageName,
     before: {
       label: "Bài viết rập khuôn thường gặp",
-      text: "🔥 BẠN ĐANG TÌM KIẾM MỘT CHIẾC BÁNH MÌ HOÀN HẢO CHO BUỔI SÁNG NĂNG ĐỘNG? ✨\n\n🌟 Hãy đến ngay với chúng tôi để khám phá hương vị tuyệt vời đánh thức mọi giác quan!\n✅ Nguyên liệu chọn lọc cao cấp\n✅ Quy trình làm bánh tận tâm từng công đoạn\n✅ Hương vị đậm đà khó quên ngay từ lần đầu thưởng thức\n\n👉 Nhanh tay inbox ngay hôm nay để nhận ngàn ưu đãi hấp dẫn nhé cả nhà yêu!!! 💬",
+      text: "🔥 NGÀY LỄ ĐẾN RỒI, BẠN ĐÃ CÓ ĐIỂM HẸN LÝ TƯỞNG CHƯA? ✨\n\n🌟 Hãy đến với chúng tôi để tận hưởng không gian tuyệt vời và những thức uống thơm ngon!\n✅ Không gian ấm cúng\n✅ Phục vụ tận tâm\n✅ Trải nghiệm khó quên\n\n👉 Ghé ngay hôm nay để cùng tận hưởng ngày lễ nhé cả nhà yêu!!! 💬",
       issues: [
         "Mở đầu hỏi sáo rỗng, đọc là thấy văn mẫu",
         "Liệt kê gạch đầu dòng kèm nhiều emoji rối mắt",
-        "Thiếu giá bán, giờ ra lò và địa chỉ cụ thể",
+        "Không nêu ngày lễ và tình trạng hoạt động cụ thể",
       ],
     },
     after: {
       label: "Sau biên tập 2 lượt",
-      text: "Mẻ bánh mì bơ tỏi đầu tiên ra lò lúc 6 giờ sáng, vỏ còn giòn rụm và ruột mềm. 25.000đ một ổ, combo 5 ổ 110.000đ.\n\nTiệm ở 12 Lê Lợi, bạn ghé trước 8 giờ sáng để lấy bánh còn ấm hoặc nhắn tiệm giữ phần trước nhé.",
+      text: hoaSuaPost.caption,
       highlights: [
-        "Vào thẳng sản phẩm, giờ ra lò và cảm giác thật",
-        "Giữ chính xác giá 25.000đ, combo 110.000đ và địa chỉ 12 Lê Lợi",
-        "Đúng xưng hô \"tiệm\" và \"bạn\" theo Brand Kit",
+        "Nêu rõ thông báo hoạt động ngày 24/11 ngay từ đầu",
+        "Giữ đúng thông tin Hoa Sữa vẫn hoạt động bình thường",
+        "Giọng lịch sự, xưng hô \"Quý khách\" theo bài tham chiếu",
       ],
     },
   },
@@ -120,21 +122,21 @@ export const captionSamples: CaptionSample[] = [
 
 export const visualSamples: VisualSample[] = [
   {
-    id: "moc-an-visual",
-    brandName: "Tiệm Bánh Mộc An",
-    industry: "F&B · Bánh thủ công",
-    photoTitle: "Bánh mì bơ tỏi ra lò 6:00",
-    photoSub: "25.000đ/ổ · 12 Lê Lợi",
-    logoLabel: "MỘC AN",
-    logoPosition: "top-right",
+    id: "hoa-sua-visual",
+    brandName: hoaSuaPost.pageName,
+    industry: "F&B · Cà phê & trà",
+    photoTitle: "Ngày Văn hóa Việt Nam · 24/11/2026",
+    photoSub: hoaSuaPost.address,
+    logoLabel: "HOA SỮA",
+    logoPosition: "top-left",
     palette: {
-      bg: "#1c1712",
-      surface: "#2a2118",
-      accent: "#e7b878",
+      bg: "#192938",
+      surface: "#243b2a",
+      accent: "#b6c97d",
       text: "#fbefdc",
     },
-    aspectNote: "Logo góc phải trên · Cách mép 16px · Không đè chữ tiêu đề",
-    checks: ["File logo vector PNG/SVG nền trong", "Chữ tiếng Việt đúng dấu 100%", "Ánh sáng ấm tự nhiên"],
+    aspectNote: "Giữ nguyên ảnh tham chiếu · Logo góc trái trên · Hiển thị trọn ảnh",
+    checks: ["Logo đúng ảnh được cung cấp", "Giữ nguyên nội dung ngày 24/11/2026", "Không cắt tiêu đề và địa chỉ"],
   },
   {
     id: "binh-minh-visual",

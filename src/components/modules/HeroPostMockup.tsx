@@ -1,9 +1,10 @@
 "use client";
 
-import { CalendarClock, Check, Globe2, MessageCircle, PenLine, Share2, ThumbsUp, Wheat } from "lucide-react";
+import { CalendarClock, Check, Globe2, MessageCircle, PenLine, Share2, ThumbsUp } from "lucide-react";
+import Image from "next/image";
 import { AnimatePresence, m, useInView, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { BakeryPhoto } from "@/components/ui/BakeryPhoto";
+import { HoaSuaPhoto } from "@/components/ui/HoaSuaPhoto";
 import { heroMockPost } from "@/data/site-config";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -70,9 +71,13 @@ export function HeroPostMockup() {
         {/* Bài đăng */}
         <article className="overflow-hidden rounded-xl border border-line bg-surface">
           <header className="flex items-center gap-3 px-4 pt-4">
-            <div className="flex size-10 items-center justify-center rounded-full border border-line bg-elevated text-[13px] font-bold text-ivory">
-              MA
-            </div>
+            <Image
+              src={heroMockPost.avatarSrc}
+              alt="Ảnh đại diện Hoa Sữa"
+              width={40}
+              height={40}
+              className="size-10 shrink-0 rounded-full border border-line object-cover"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-semibold text-fg">{heroMockPost.pageName}</p>
               <p className="flex items-center gap-1 text-[12px] text-fg-3">
@@ -99,7 +104,7 @@ export function HeroPostMockup() {
                   transition={{ duration: 0.45, ease: easeOutExpo }}
                   className="absolute inset-0"
                 >
-                  <BakeryPhoto title="Bánh mì nóng mỗi sáng" subtitle="Ra lò 6:00 · 12 Lê Lợi" />
+                  <HoaSuaPhoto />
                 </m.div>
               ) : (
                 <m.div
@@ -131,13 +136,13 @@ export function HeroPostMockup() {
                     current === "logo" && "outline outline-1 outline-offset-4 outline-dashed outline-accent/70",
                   )}
                 >
-                  <Wheat size={16} strokeWidth={1.75} className="text-[#e7b878]" aria-hidden />
-                  <span className="text-[10px] font-bold tracking-[0.08em] text-ivory">MỘC AN</span>
+                  <Image src={heroMockPost.logoSrc} alt="Logo Hoa Sữa Coffee & Tea" width={27} height={33} className="hidden sm:block" />
+                  <span className="text-[10px] font-bold tracking-[0.08em] text-ivory">HOA SỮA</span>
                 </m.div>
               )}
             </AnimatePresence>
             {current === "logo" && (
-              <span className="absolute right-3 top-14 rounded bg-canvas/80 px-1.5 py-0.5 font-mono text-[10px] text-accent">
+              <span className="absolute right-3 top-16 hidden rounded bg-canvas/80 px-1.5 py-0.5 font-mono text-[10px] text-accent sm:block">
                 logo gốc · vùng an toàn
               </span>
             )}
@@ -251,7 +256,7 @@ function Caption({ text, typing }: { text: string; typing: boolean }) {
   }, [typing, text]);
 
   return (
-    <p className="relative px-4 pt-3 text-[14px] leading-[1.55] text-fg/90">
+    <p className="relative whitespace-pre-line px-4 pt-3 text-[14px] leading-[1.55] text-fg/90">
       {/* Giữ chiều cao cố định để khung không nhảy khi gõ */}
       <span className="invisible" aria-hidden>
         {text}

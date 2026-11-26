@@ -22,12 +22,21 @@ export const heroContent = {
   proofPoints: ["Brand Kit riêng từng thương hiệu", "Biên tập 2 lượt", "Báo cáo số liệu thật"],
 } as const;
 
-/** Bài đăng mẫu hiển thị trong mockup Hero. Tên thương hiệu là ví dụ minh họa. */
-export const heroMockPost = {
-  pageName: "Tiệm Bánh Mộc An",
+export const hoaSuaPost = {
+  pageName: "HOA SỮA - Coffee & tea",
   caption:
-    "Mẻ bánh mì đầu tiên ra lò lúc 6 giờ sáng. Vỏ giòn, ruột mềm, bơ thơm vừa đủ. Ghé 12 Lê Lợi trước 8 giờ để lấy bánh còn ấm nhé.",
-  scheduledAt: "19:00 · Thứ Năm",
+    "📢 THÔNG BÁO HOẠT ĐỘNG NGÀY LỄ 24/11\n\nNhân dịp Ngày Văn hóa Việt Nam – 24/11, Hoa Sữa Coffee & Tea vẫn hoạt động bình thường để phục vụ Quý khách.\n\n🌿 Kính chúc Quý khách có một ngày lễ thật vui vẻ, ý nghĩa bên gia đình và những người thân yêu.\n\n☕ Hoa Sữa luôn sẵn sàng đón tiếp và phục vụ Quý khách!",
+  photoSrc: "/samples/hoa-sua/culture-day.webp",
+  photoAlt:
+    "Hoa Sữa Coffee & Tea thông báo hoạt động ngày 24/11/2026, tại 137 Đinh Tiên Hoàng, Phường An Xuyên",
+  avatarSrc: "/samples/hoa-sua/avatar.png",
+  logoSrc: "/samples/hoa-sua/logo.png",
+  address: "137 Đinh Tiên Hoàng, Phường An Xuyên",
+} as const;
+
+export const heroMockPost = {
+  ...hoaSuaPost,
+  scheduledAt: "19:00 · 24/11/2026",
   stages: [
     { key: "writing", label: "Đang viết" },
     { key: "logo", label: "Gắn logo gốc" },
