@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { createCustomerSchema } from "@/lib/admin-schemas";
-import { requireAdminApi } from "@/lib/api-auth";
+import { requireCustomerManageApi, requireDashboardReadApi } from "@/lib/api-auth";
 import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 const selectCols = `
@@ -22,7 +22,7 @@ const selectCols = `
 `;
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireDashboardReadApi();
   if (!auth.ok) return auth.response;
 
   syncFromJavisLocalDir();
@@ -32,7 +32,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireCustomerManageApi();
   if (!auth.ok) return auth.response;
 
   let body: unknown;

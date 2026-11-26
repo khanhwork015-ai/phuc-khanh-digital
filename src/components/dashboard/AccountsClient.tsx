@@ -4,12 +4,14 @@ import { KeyRound, Lock, Plus, Shield, Unlock } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { userRoles, type UserRole } from "@/db/types";
+import { roleLabels } from "@/lib/permissions";
 import { easeOutExpo } from "@/lib/theme";
 
 type AccountRow = {
   id: string;
   username: string;
-  role: "ADMIN" | "CUSTOMER";
+  role: UserRole;
   isActive: boolean;
   customerId: string | null;
   customerName: string | null;
@@ -23,7 +25,7 @@ type CustomerOption = {
   businessName: string;
 };
 
-export function AccountsClient() {
+export function AccountsClient({ canEdit = false }: { canEdit?: boolean }) {
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,7 @@ export function AccountsClient() {
   const [showCreate, setShowCreate] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("CUSTOMER");
   const [customerId, setCustomerId] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -67,16 +70,22 @@ export function AccountsClient() {
   function requestCreateAccount(e: React.FormEvent) {
     e.preventDefault();
     setCreateError(null);
-    if (!customerId || username.trim().length < 3 || password.length < 8) {
-      setCreateError("Vui lòng chọn khách hàng, nhập username (>= 3 ký tự) và mật khẩu (>= 8 ký tự).");
+    if (username.trim().length < 3 || password.length < 8) {
+      setCreateError("Vui lòng nhập username (tối thiểu 3 ký tự) và mật khẩu (tối thiểu 8 ký tự).");
+      return;
+    }
+    if (role === "CUSTOMER" && !customerId) {
+      setCreateError("Tài khoản Khách hàng bắt buộc phải chọn hồ sơ khách hàng liên kết.");
       return;
     }
 
     const chosen = customers.find((c) => c.id === customerId);
+    const targetDesc = role === "CUSTOMER" ? chosen?.businessName ?? "khách hàng" : roleLabels[role];
+
     setConfirmState({
       open: true,
-      title: `Tạo tài khoản cho ${chosen?.businessName ?? "khách hàng"}`,
-      description: `Cấp tài khoản đăng nhập "${username.trim()}" để khách hàng truy cập Portal duyệt bài.`,
+      title: `Cấp tài khoản "${username.trim()}"`,
+      description: `Vai trò: ${roleLabels[role]}${role === "CUSTOMER" ? ` — liên kết ${targetDesc}` : ""}.`,
       confirmLabel: "Cấp tài khoản",
       variant: "default",
       errorMessage: null,
@@ -84,7 +93,12 @@ export function AccountsClient() {
         const res = await fetch("/api/admin/accounts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: username.trim(), password, customerId }),
+          body: JSON.stringify({
+            username: username.trim(),
+            password,
+            role,
+            customerId: role === "CUSTOMER" ? customerId : undefined,
+          }),
         });
         const data = (await res.json()) as { ok?: boolean; message?: string };
         if (!res.ok || !data.ok) {
@@ -94,6 +108,7 @@ export function AccountsClient() {
         setShowCreate(false);
         setUsername("");
         setPassword("");
+        setRole("CUSTOMER");
         setCustomerId("");
         setConfirmState(null);
         await loadAll();
@@ -164,17 +179,19 @@ export function AccountsClient() {
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent">Phân quyền truy cập</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-fg">Quản lý Tài khoản</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setCreateError(null);
-            setShowCreate(true);
-          }}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-canvas transition-colors hover:bg-accent-hover"
-        >
-          <Plus size={16} />
-          <span>Cấp tài khoản khách</span>
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => {
+              setCreateError(null);
+              setShowCreate(true);
+            }}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-canvas transition-colors hover:bg-accent-hover"
+          >
+            <Plus size={16} />
+            <span>Cấp tài khoản mới</span>
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -198,7 +215,7 @@ export function AccountsClient() {
                   <p className="text-base font-semibold text-fg">{acc.username}</p>
                   <span className="inline-flex items-center gap-1 rounded-lg border border-line bg-canvas px-2 py-0.5 font-mono text-[11px] text-accent">
                     <Shield size={11} />
-                    {acc.role}
+                    {roleLabels[acc.role] ?? acc.role}
                   </span>
                   <span
                     className={
@@ -213,69 +230,87 @@ export function AccountsClient() {
                 <p className="text-xs text-fg-3">
                   {acc.customerName
                     ? `Khách hàng: ${acc.customerCode} · ${acc.customerName}`
-                    : "Tài khoản quản trị nội bộ"}
+                    : "Tài khoản nội bộ"}
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResetTarget(acc);
-                    setNewPassword("");
-                  }}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
-                >
-                  <KeyRound size={13} />
-                  <span>Đổi mật khẩu</span>
-                </button>
-                {acc.role !== "ADMIN" && (
+              {canEdit && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => requestToggleActive(acc)}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg-2 hover:text-fg"
+                    onClick={() => {
+                      setResetTarget(acc);
+                      setNewPassword("");
+                    }}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
                   >
-                    {acc.isActive ? <Lock size={13} /> : <Unlock size={13} />}
-                    <span>{acc.isActive ? "Khóa" : "Mở khóa"}</span>
+                    <KeyRound size={13} />
+                    <span>Đổi mật khẩu</span>
                   </button>
-                )}
-              </div>
+                  {acc.role !== "ADMIN" && (
+                    <button
+                      type="button"
+                      onClick={() => requestToggleActive(acc)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg-2 hover:text-fg"
+                    >
+                      {acc.isActive ? <Lock size={13} /> : <Unlock size={13} />}
+                      <span>{acc.isActive ? "Khóa" : "Mở khóa"}</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </m.div>
           ))}
         </div>
       )}
 
-      {showCreate && (
+      {showCreate && canEdit && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <form
             onSubmit={requestCreateAccount}
             className="w-full max-w-md rounded-t-2xl border border-line bg-surface p-5 sm:rounded-2xl sm:p-6"
           >
-            <h2 className="text-lg font-semibold text-fg">Cấp tài khoản cho Khách hàng</h2>
+            <h2 className="text-lg font-semibold text-fg">Cấp tài khoản mới</h2>
             <div className="mt-4 space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-fg-2">Chọn khách hàng *</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Vai trò *</label>
                 <select
-                  required
-                  value={customerId}
-                  onChange={(e) => setCustomerId(e.target.value)}
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
                   className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
                 >
-                  <option value="">-- Chọn khách hàng --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.code} - {c.businessName}
+                  {userRoles.map((r) => (
+                    <option key={r} value={r}>
+                      {roleLabels[r]}
                     </option>
                   ))}
                 </select>
               </div>
+              {role === "CUSTOMER" && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">Chọn khách hàng *</label>
+                  <select
+                    required
+                    value={customerId}
+                    onChange={(e) => setCustomerId(e.target.value)}
+                    className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                  >
+                    <option value="">-- Chọn khách hàng --</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} - {c.businessName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-xs font-medium text-fg-2">Tên đăng nhập *</label>
                 <input
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="VD: shin.aios"
+                  placeholder="VD: shin.aios hoặc mod.linh"
                   className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
                 />
               </div>
@@ -286,7 +321,7 @@ export function AccountsClient() {
                   type="text"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu cấp cho khách"
+                  placeholder="Nhập mật khẩu cấp cho tài khoản"
                   className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
                 />
               </div>
@@ -317,7 +352,7 @@ export function AccountsClient() {
         </div>
       )}
 
-      {resetTarget && (
+      {resetTarget && canEdit && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <div className="w-full max-w-md rounded-t-2xl border border-line bg-surface p-5 sm:rounded-2xl sm:p-6">
             <h2 className="text-lg font-semibold text-fg">Đặt lại mật khẩu: {resetTarget.username}</h2>

@@ -1,4 +1,4 @@
-export const userRoles = ["ADMIN", "CUSTOMER"] as const;
+export const userRoles = ["ADMIN", "DIRECTOR", "MODERATOR", "CUSTOMER"] as const;
 export type UserRole = (typeof userRoles)[number];
 
 export const leadStatuses = ["new", "contacting", "converted", "archived"] as const;

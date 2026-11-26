@@ -14,6 +14,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/ui/Logo";
+import type { UserRole } from "@/db/types";
+import { roleLabels } from "@/lib/permissions";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -29,9 +31,11 @@ const JAVIS_URL = "https://phuckhanhstudio.tail158e96.ts.net/";
 
 export function DashboardShell({
   username,
+  role,
   children,
 }: {
   username: string;
+  role: UserRole;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -101,7 +105,7 @@ export function DashboardShell({
             <div className="flex items-center justify-between rounded-xl bg-elevated/60 px-3.5 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-xs font-semibold text-fg">{username}</p>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-accent">Admin</p>
+                <p className="truncate font-mono text-[10px] text-accent">{roleLabels[role]}</p>
               </div>
               <button
                 type="button"

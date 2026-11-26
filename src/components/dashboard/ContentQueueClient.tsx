@@ -29,7 +29,7 @@ const statusLabel: Record<string, string> = {
   published: "Đã đăng",
 };
 
-export function ContentQueueClient() {
+export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
   const [items, setItems] = useState<ContentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
@@ -170,28 +170,30 @@ export function ContentQueueClient() {
                   <p className="font-mono text-xs text-fg-3">{item.javisItemId}</p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {item.status === "pending_review" && (
-                    <button
-                      type="button"
-                      onClick={() => requestStatusChange(item, "pending_client", "Gửi khách duyệt")}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-canvas hover:bg-accent-hover"
-                    >
-                      <Send size={13} />
-                      <span>Gửi khách duyệt</span>
-                    </button>
-                  )}
-                  {(item.status === "pending_review" || item.status === "pending_client") && (
-                    <button
-                      type="button"
-                      onClick={() => requestStatusChange(item, "approved", "Chốt đã duyệt")}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
-                    >
-                      <CheckCircle2 size={13} />
-                      <span>Đánh dấu Đã duyệt</span>
-                    </button>
-                  )}
-                </div>
+                {canEdit && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.status === "pending_review" && (
+                      <button
+                        type="button"
+                        onClick={() => requestStatusChange(item, "pending_client", "Gửi khách duyệt")}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-canvas hover:bg-accent-hover"
+                      >
+                        <Send size={13} />
+                        <span>Gửi khách duyệt</span>
+                      </button>
+                    )}
+                    {(item.status === "pending_review" || item.status === "pending_client") && (
+                      <button
+                        type="button"
+                        onClick={() => requestStatusChange(item, "approved", "Chốt đã duyệt")}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
+                      >
+                        <CheckCircle2 size={13} />
+                        <span>Đánh dấu Đã duyệt</span>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </m.div>
           ))}

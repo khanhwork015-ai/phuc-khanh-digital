@@ -35,7 +35,7 @@ const statusLabelMap: Record<LeadRow["status"], string> = {
   archived: "Lưu trữ",
 };
 
-export function LeadsClient() {
+export function LeadsClient({ canEdit = false }: { canEdit?: boolean }) {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -289,33 +289,35 @@ export function LeadsClient() {
                 {lead.note && <p className="text-xs text-fg-3">Ghi chú: {lead.note}</p>}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openEditModal(lead)}
-                  className="inline-flex h-9 items-center rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
-                >
-                  Cập nhật
-                </button>
-                {lead.status !== "converted" && (
+              {canEdit && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => openConvertModal(lead)}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-canvas hover:bg-accent-hover"
+                    onClick={() => openEditModal(lead)}
+                    className="inline-flex h-9 items-center rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
                   >
-                    <ArrowRightLeft size={13} />
-                    <span>Chuyển thành Khách</span>
+                    Cập nhật
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => requestDeleteLead(lead)}
-                  aria-label={`Xóa lead ${lead.fullName}`}
-                  className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
+                  {lead.status !== "converted" && (
+                    <button
+                      type="button"
+                      onClick={() => openConvertModal(lead)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-canvas hover:bg-accent-hover"
+                    >
+                      <ArrowRightLeft size={13} />
+                      <span>Chuyển thành Khách</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => requestDeleteLead(lead)}
+                    aria-label={`Xóa lead ${lead.fullName}`}
+                    className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              )}
             </m.div>
           ))}
         </div>

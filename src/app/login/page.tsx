@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getSessionUser } from "@/lib/auth";
+import { isDashboardRole } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Đăng nhập",
@@ -15,7 +16,7 @@ export default async function LoginPage({
 }) {
   const user = await getSessionUser();
   if (user) {
-    redirect(user.role === "ADMIN" ? "/dashboard" : "/portal");
+    redirect(isDashboardRole(user.role) ? "/dashboard" : "/portal");
   }
 
   const { next } = await searchParams;

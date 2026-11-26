@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { updateCustomerSchema } from "@/lib/admin-schemas";
-import { requireAdminApi } from "@/lib/api-auth";
+import { requireCustomerManageApi } from "@/lib/api-auth";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdminApi();
+  const auth = await requireCustomerManageApi();
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
@@ -85,7 +85,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdminApi();
+  const auth = await requireCustomerManageApi();
   if (!auth.ok) return auth.response;
 
   const { id } = await params;

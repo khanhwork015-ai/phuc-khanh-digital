@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
-import { requireAdminApi } from "@/lib/api-auth";
+import { requireAdminApi, requireDashboardReadApi } from "@/lib/api-auth";
 import { hashPassword } from "@/lib/auth";
-import { createCustomerAccountSchema } from "@/lib/auth-schema";
+import { createAccountSchema } from "@/lib/auth-schema";
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireDashboardReadApi();
   if (!auth.ok) return auth.response;
 
   const db = getSqliteDb();
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: "Dữ liệu không hợp lệ." }, { status: 400 });
   }
 
-  const parsed = createCustomerAccountSchema.safeParse(body);
+  const parsed = createAccountSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { ok: false, message: parsed.error.issues[0]?.message ?? "Thông tin tài khoản không hợp lệ." },
@@ -56,12 +56,13 @@ export async function POST(req: Request) {
   }
 
   const db = getSqliteDb();
-  const customer = db
-    .prepare("SELECT id FROM customers WHERE id = ? LIMIT 1")
-    .get(parsed.data.customerId);
+  const linkedCustomerId = parsed.data.role === "CUSTOMER" ? parsed.data.customerId || null : null;
 
-  if (!customer) {
-    return NextResponse.json({ ok: false, message: "Khách hàng liên kết không tồn tại." }, { status: 404 });
+  if (linkedCustomerId) {
+    const customer = db.prepare("SELECT id FROM customers WHERE id = ? LIMIT 1").get(linkedCustomerId);
+    if (!customer) {
+      return NextResponse.json({ ok: false, message: "Khách hàng liên kết không tồn tại." }, { status: 404 });
+    }
   }
 
   const id = crypto.randomUUID();
@@ -70,8 +71,8 @@ export async function POST(req: Request) {
   try {
     db.prepare(
       `INSERT INTO users (id, username, password_hash, role, is_active, customer_id, created_at, updated_at)
-       VALUES (?, ?, ?, 'CUSTOMER', 1, ?, ?, ?)`,
-    ).run(id, parsed.data.username, hashPassword(parsed.data.password), parsed.data.customerId, now, now);
+       VALUES (?, ?, ?, ?, 1, ?, ?, ?)`,
+    ).run(id, parsed.data.username, hashPassword(parsed.data.password), parsed.data.role, linkedCustomerId, now, now);
 
     return NextResponse.json(
       {
@@ -79,9 +80,9 @@ export async function POST(req: Request) {
         account: {
           id,
           username: parsed.data.username,
-          role: "CUSTOMER",
+          role: parsed.data.role,
           isActive: true,
-          customerId: parsed.data.customerId,
+          customerId: linkedCustomerId,
         },
       },
       { status: 201 },

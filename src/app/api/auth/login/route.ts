@@ -3,6 +3,7 @@ import { getSqliteDb } from "@/db/sqlite";
 import type { UserRole } from "@/db/types";
 import { buildSessionCookieOptions, createSession, verifyPassword } from "@/lib/auth";
 import { loginSchema } from "@/lib/auth-schema";
+import { isDashboardRole } from "@/lib/permissions";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 const isLoginRateLimited = createRateLimiter(10 * 60 * 1000, 10);
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
   const now = new Date().toISOString();
   db.prepare("UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?").run(now, now, user.id);
 
-  const redirectTo = user.role === "ADMIN" ? "/dashboard" : "/portal";
+  const redirectTo = isDashboardRole(user.role) ? "/dashboard" : "/portal";
   const response = NextResponse.json({
     ok: true,
     user: {

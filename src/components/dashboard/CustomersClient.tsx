@@ -57,7 +57,7 @@ const contractStatusLabel: Record<CustomerRow["contractStatus"], string> = {
   completed: "Đã hoàn thành",
 };
 
-export function CustomersClient() {
+export function CustomersClient({ canEdit = false }: { canEdit?: boolean }) {
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -249,14 +249,16 @@ export function CustomersClient() {
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent">Hồ sơ đối tác</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-fg">Quản lý Khách hàng</h1>
         </div>
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-canvas transition-colors hover:bg-accent-hover"
-        >
-          <Plus size={16} />
-          <span>Thêm khách (Offline / Mới)</span>
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-canvas transition-colors hover:bg-accent-hover"
+          >
+            <Plus size={16} />
+            <span>Thêm khách (Offline / Mới)</span>
+          </button>
+        )}
       </div>
 
       <div className="relative w-full sm:max-w-sm">
@@ -307,24 +309,26 @@ export function CustomersClient() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openEditModal(c)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
-                >
-                  <Pencil size={13} />
-                  <span>Chỉnh sửa</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => requestDeleteCustomer(c)}
-                  aria-label={`Xóa khách hàng ${c.businessName}`}
-                  className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
+              {canEdit && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(c)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
+                  >
+                    <Pencil size={13} />
+                    <span>Chỉnh sửa</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => requestDeleteCustomer(c)}
+                    aria-label={`Xóa khách hàng ${c.businessName}`}
+                    className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              )}
             </m.div>
           ))}
         </div>

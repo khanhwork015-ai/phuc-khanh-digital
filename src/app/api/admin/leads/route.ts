@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { leadStatuses, type LeadStatus } from "@/db/types";
-import { requireAdminApi } from "@/lib/api-auth";
+import { requireDashboardReadApi } from "@/lib/api-auth";
 
 const selectCols = `
   id,
@@ -17,7 +17,7 @@ const selectCols = `
 `;
 
 export async function GET(req: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireDashboardReadApi();
   if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
