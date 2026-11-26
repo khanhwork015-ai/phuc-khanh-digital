@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound, Lock, Plus, Shield, Unlock } from "lucide-react";
+import { KeyRound, Lock, Plus, Shield, Trash2, Unlock } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -26,7 +26,13 @@ type CustomerOption = {
   businessName: string;
 };
 
-export function AccountsClient({ canEdit = false }: { canEdit?: boolean }) {
+export function AccountsClient({
+  canEdit = false,
+  currentUserId,
+}: {
+  canEdit?: boolean;
+  currentUserId?: string;
+}) {
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +53,7 @@ export function AccountsClient({ canEdit = false }: { canEdit?: boolean }) {
     description: string;
     confirmLabel: string;
     variant: "default" | "danger";
+    requireText?: string;
     errorMessage: string | null;
     action: () => Promise<void>;
   } | null>(null);
@@ -173,6 +180,29 @@ export function AccountsClient({ canEdit = false }: { canEdit?: boolean }) {
     });
   }
 
+  function requestDeleteAccount(acc: AccountRow) {
+    setConfirmState({
+      open: true,
+      title: `Xóa vĩnh viễn tài khoản "${acc.username}"`,
+      description:
+        "Tài khoản và toàn bộ phiên đăng nhập của người dùng này sẽ bị xóa vĩnh viễn khỏi hệ thống và không thể khôi phục.",
+      confirmLabel: "Xóa vĩnh viễn",
+      variant: "danger",
+      requireText: acc.username,
+      errorMessage: null,
+      action: async () => {
+        const res = await fetch(`/api/admin/accounts/${acc.id}`, { method: "DELETE" });
+        const data = (await res.json()) as { ok?: boolean; message?: string };
+        if (!res.ok || !data.ok) {
+          setConfirmState((prev) => (prev ? { ...prev, errorMessage: data.message ?? "Xóa thất bại." } : null));
+          return;
+        }
+        setAccounts((prev) => prev.filter((a) => a.id !== acc.id));
+        setConfirmState(null);
+      },
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -256,6 +286,16 @@ export function AccountsClient({ canEdit = false }: { canEdit?: boolean }) {
                     >
                       {acc.isActive ? <Lock size={13} /> : <Unlock size={13} />}
                       <span>{acc.isActive ? "Khóa" : "Mở khóa"}</span>
+                    </button>
+                  )}
+                  {acc.id !== currentUserId && (
+                    <button
+                      type="button"
+                      onClick={() => requestDeleteAccount(acc)}
+                      aria-label={`Xóa tài khoản ${acc.username}`}
+                      className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
+                    >
+                      <Trash2 size={15} />
                     </button>
                   )}
                 </div>
@@ -390,6 +430,7 @@ export function AccountsClient({ canEdit = false }: { canEdit?: boolean }) {
           description={confirmState.description}
           confirmLabel={confirmState.confirmLabel}
           variant={confirmState.variant}
+          requireText={confirmState.requireText}
           errorMessage={confirmState.errorMessage}
         />
       )}
