@@ -1,8 +1,8 @@
 "use client";
 
-import { Building2, RefreshCw, Search, X } from "lucide-react";
-import { m } from "motion/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, RefreshCw, Search, X } from "lucide-react";
+import { AnimatePresence, m } from "motion/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatPostTime } from "@/components/content/FacebookPostPreview";
 import { PostReviewModal, type ReviewAction } from "@/components/content/PostReviewModal";
 import { easeOutExpo } from "@/lib/theme";
@@ -52,10 +52,30 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
   const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [brandMenuOpen, setBrandMenuOpen] = useState(false);
+  const brandDropdownRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState<string>("");
   const [syncInfo, setSyncInfo] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!brandMenuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!brandDropdownRef.current?.contains(e.target as Node)) {
+        setBrandMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setBrandMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [brandMenuOpen]);
 
   const loadContent = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -129,6 +149,8 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
   const countOf = (v: string) =>
     v === "all" ? brandAndSearchFiltered.length : brandAndSearchFiltered.filter((i) => i.status === v).length;
 
+  const activeBrand = brands.find((b) => b.key === brandFilter) ?? null;
+
   const hasActiveFilter = filter !== "all" || brandFilter !== "all" || search.trim() !== "";
 
   function resetFilters() {
@@ -192,21 +214,104 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:flex-none">
-              <Building2 size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" />
-              <select
-                aria-label="Lọc theo khách hàng"
-                value={brandFilter}
-                onChange={(e) => setBrandFilter(e.target.value)}
-                className="h-9 w-full rounded-xl border border-line bg-canvas pl-8 pr-8 text-xs font-medium text-fg focus:border-accent focus:outline-none sm:w-52"
+            <div ref={brandDropdownRef} className="relative flex-1 sm:flex-none">
+              <button
+                type="button"
+                aria-expanded={brandMenuOpen}
+                onClick={() => setBrandMenuOpen((prev) => !prev)}
+                className={cn(
+                  "inline-flex h-9 w-full items-center justify-between gap-2.5 rounded-xl border bg-canvas px-3 text-xs font-medium transition-colors sm:min-w-52",
+                  brandMenuOpen || brandFilter !== "all"
+                    ? "border-line-accent text-fg"
+                    : "border-line text-fg-2 hover:border-line-strong hover:text-fg",
+                )}
               >
-                <option value="all">Tất cả khách / Brand ({items.length})</option>
-                {brands.map((b) => (
-                  <option key={b.key} value={b.key}>
-                    {b.name} ({b.total})
-                  </option>
-                ))}
-              </select>
+                <span className="flex min-w-0 items-center gap-2">
+                  {activeBrand ? (
+                    activeBrand.logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={activeBrand.logoUrl} alt="" className="size-4 shrink-0 rounded-full bg-white object-cover" />
+                    ) : (
+                      <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-elevated text-[10px] font-bold text-accent">
+                        {activeBrand.name.charAt(0).toUpperCase()}
+                      </span>
+                    )
+                  ) : null}
+                  <span className="truncate">
+                    {activeBrand ? activeBrand.name : `Tất cả khách (${items.length})`}
+                  </span>
+                </span>
+                <ChevronDown
+                  size={14}
+                  className={cn("shrink-0 text-fg-3 transition-transform duration-200", brandMenuOpen && "rotate-180")}
+                />
+              </button>
+
+              <AnimatePresence>
+                {brandMenuOpen && (
+                  <m.div
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                    transition={{ duration: 0.16, ease: easeOutExpo }}
+                    className="absolute right-0 z-30 mt-1.5 w-64 rounded-xl border border-line-strong bg-surface p-1.5 shadow-2xl"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBrandFilter("all");
+                        setBrandMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs font-medium transition-colors",
+                        brandFilter === "all"
+                          ? "bg-accent-muted text-accent"
+                          : "text-fg-2 hover:bg-elevated hover:text-fg",
+                      )}
+                    >
+                      <span>Tất cả khách</span>
+                      <span className="font-mono text-[11px] opacity-75">{items.length}</span>
+                    </button>
+
+                    {brands.map((b) => (
+                      <button
+                        key={b.key}
+                        type="button"
+                        onClick={() => {
+                          setBrandFilter(b.key);
+                          setBrandMenuOpen(false);
+                        }}
+                        className={cn(
+                          "mt-0.5 flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors",
+                          brandFilter === b.key
+                            ? "bg-accent-muted text-accent"
+                            : "text-fg-2 hover:bg-elevated hover:text-fg",
+                        )}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          {b.logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={b.logoUrl} alt="" className="size-4 shrink-0 rounded-full bg-white object-cover" />
+                          ) : (
+                            <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-elevated text-[10px] font-bold text-accent">
+                              {b.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="truncate">{b.name}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <span className="font-mono text-[11px] opacity-75">{b.total}</span>
+                          {b.pending > 0 && (
+                            <span className="rounded-full bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-canvas">
+                              {b.pending}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </m.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {hasActiveFilter && (
@@ -223,19 +328,19 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
         </div>
 
         {brands.length > 0 && (
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+          <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => setBrandFilter("all")}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                "inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
                 brandFilter === "all"
-                  ? "bg-elevated text-fg ring-1 ring-line-strong"
-                  : "text-fg-3 hover:bg-canvas/70 hover:text-fg",
+                  ? "border-line-strong bg-elevated text-fg"
+                  : "border-transparent bg-canvas/50 text-fg-3 hover:border-line hover:bg-canvas hover:text-fg",
               )}
             >
-              <span>Tất cả Brand</span>
-              <span className="font-mono text-[11px] opacity-70">{items.length}</span>
+              <span>Tất cả</span>
+              <span className="font-mono text-[11px] opacity-75">{items.length}</span>
             </button>
             {brands.map((b) => (
               <button
@@ -243,10 +348,10 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
                 type="button"
                 onClick={() => setBrandFilter(b.key)}
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                  "inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
                   brandFilter === b.key
-                    ? "bg-accent/15 text-accent ring-1 ring-line-accent"
-                    : "text-fg-2 hover:bg-canvas/70 hover:text-fg",
+                    ? "border-line-accent bg-accent-muted text-accent"
+                    : "border-transparent bg-canvas/50 text-fg-2 hover:border-line hover:bg-canvas hover:text-fg",
                 )}
               >
                 {b.logoUrl ? (
@@ -258,9 +363,9 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
                   </span>
                 )}
                 <span>{b.name}</span>
-                <span className="font-mono text-[11px] opacity-70">{b.total}</span>
+                <span className="font-mono text-[11px] opacity-75">{b.total}</span>
                 {b.pending > 0 && (
-                  <span className="rounded-full bg-accent px-1.5 py-0.2 font-mono text-[10px] font-bold text-canvas">
+                  <span className="rounded-full bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-canvas">
                     {b.pending}
                   </span>
                 )}
