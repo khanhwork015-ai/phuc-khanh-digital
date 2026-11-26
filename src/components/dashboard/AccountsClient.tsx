@@ -45,6 +45,7 @@ export function AccountsClient({
   const [createError, setCreateError] = useState<string | null>(null);
 
   const [resetTarget, setResetTarget] = useState<AccountRow | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
   const [confirmState, setConfirmState] = useState<{
@@ -153,7 +154,7 @@ export function AccountsClient({
   }
 
   function requestResetPassword() {
-    if (!resetTarget || newPassword.length < 8) return;
+    if (!resetTarget || !currentPassword || newPassword.length < 8) return;
     const target = resetTarget;
     setConfirmState({
       open: true,
@@ -166,7 +167,7 @@ export function AccountsClient({
         const res = await fetch(`/api/admin/accounts/${target.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newPassword }),
+          body: JSON.stringify({ currentPassword, newPassword }),
         });
         const data = (await res.json()) as { ok?: boolean; message?: string };
         if (!res.ok || !data.ok) {
@@ -174,6 +175,7 @@ export function AccountsClient({
           return;
         }
         setResetTarget(null);
+        setCurrentPassword("");
         setNewPassword("");
         setConfirmState(null);
       },
@@ -271,6 +273,7 @@ export function AccountsClient({
                     type="button"
                     onClick={() => {
                       setResetTarget(acc);
+                      setCurrentPassword("");
                       setNewPassword("");
                     }}
                     className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
@@ -390,15 +393,27 @@ export function AccountsClient({
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <div className="w-full max-w-md rounded-t-2xl border border-line bg-surface p-5 sm:rounded-2xl sm:p-6">
             <h2 className="text-lg font-semibold text-fg">Đặt lại mật khẩu: {resetTarget.username}</h2>
-            <div className="mt-4">
-              <label className="mb-1 block text-xs font-medium text-fg-2">Mật khẩu mới (tối thiểu 8 ký tự)</label>
-              <input
-                type="text"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Nhập mật khẩu mới"
-                className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
-              />
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Mật khẩu hiện tại *</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu cũ của tài khoản này"
+                  className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Mật khẩu mới (tối thiểu 8 ký tự) *</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu mới"
+                  className="h-10 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                />
+              </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -410,7 +425,7 @@ export function AccountsClient({
               </button>
               <button
                 type="button"
-                disabled={newPassword.length < 8}
+                disabled={!currentPassword || newPassword.length < 8}
                 onClick={requestResetPassword}
                 className="h-10 rounded-xl bg-accent px-4 text-sm font-semibold text-canvas hover:bg-accent-hover disabled:opacity-50"
               >

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { requireAdminApi } from "@/lib/api-auth";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/auth";
 import { updateAccountSchema } from "@/lib/auth-schema";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -38,6 +38,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (!current) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy tài khoản." }, { status: 404 });
+  }
+
+  if (parsed.data.newPassword) {
+    if (!parsed.data.currentPassword || !verifyPassword(parsed.data.currentPassword, current.password_hash)) {
+      return NextResponse.json(
+        { ok: false, message: "Mật khẩu hiện tại không chính xác." },
+        { status: 400 },
+      );
+    }
   }
 
   const nextActive = typeof parsed.data.isActive === "boolean" ? (parsed.data.isActive ? 1 : 0) : current.is_active;
