@@ -27,7 +27,7 @@ export async function GET() {
   const auth = await requireDashboardReadApi();
   if (!auth.ok) return auth.response;
 
-  syncFromJavisLocalDir();
+  await syncFromJavisLocalDir();
   const db = getSqliteDb();
   const rows = db.prepare(`SELECT ${selectCols} FROM customers ORDER BY created_at DESC`).all();
   return NextResponse.json({ ok: true, customers: rows });

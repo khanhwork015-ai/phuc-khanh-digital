@@ -1,11 +1,12 @@
 "use client";
 
-import { CheckCircle2, ExternalLink, FileText, LogOut, MessageSquareWarning, Palette, Sparkles } from "lucide-react";
+import { ExternalLink, FileText, LogOut, Palette, Sparkles } from "lucide-react";
 import { m } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { formatPostTime } from "@/components/content/FacebookPostPreview";
+import { PostReviewModal, type ReviewAction } from "@/components/content/PostReviewModal";
 import { Logo } from "@/components/ui/Logo";
 import { leadPlanLabels, type LeadPlanValue } from "@/lib/lead-fields";
 import { easeOutExpo } from "@/lib/theme";
@@ -31,13 +32,15 @@ type PortalOverview = {
     id: string;
     title: string;
     caption: string;
-    mediaType: string;
     mediaUrls: string[];
     status: string;
     clientFeedback: string | null;
     scheduledAt: string | null;
     publishedAt: string | null;
     publishedUrl: string | null;
+    fanpageName: string;
+    logoUrl: string | null;
+    actions: ReviewAction[];
   }>;
 };
 
@@ -45,8 +48,8 @@ const contentStatusLabel: Record<string, string> = {
   pending_review: "Đang biên tập",
   pending_client: "Chờ bạn duyệt",
   approved: "Đã duyệt",
-  changes_requested: "Đang chỉnh sửa",
-  scheduled: "Đã lên lịch",
+  changes_requested: "Đang chỉnh sửa theo góp ý",
+  scheduled: "Đã lên lịch đăng",
   published: "Đã đăng",
 };
 
@@ -56,21 +59,13 @@ export function PortalClient({ username }: { username: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"content" | "brand">("content");
-  const [feedbackTargetId, setFeedbackTargetId] = useState<string | null>(null);
-  const [feedbackText, setFeedbackText] = useState("");
-  const [confirmState, setConfirmState] = useState<{
-    open: boolean;
-    title: string;
-    description: string;
-    confirmLabel: string;
-    errorMessage: string | null;
-    action: () => Promise<void>;
-  } | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  async function loadOverview() {
-    setLoading(true);
+  async function loadOverview(quiet = false) {
+    if (!quiet) setLoading(true);
     try {
-      const res = await fetch("/api/portal/overview");
+      const res = await fetch("/api/portal/overview", { cache: "no-store" });
       const json = (await res.json()) as PortalOverview & { ok?: boolean; message?: string };
       if (!res.ok || !json.ok) {
         setError(json.message ?? "Không thể tải dữ liệu cổng khách hàng.");
@@ -103,72 +98,24 @@ export function PortalClient({ username }: { username: string }) {
     };
   }, [data]);
 
-  function requestApprove(itemId: string, title: string) {
-    setConfirmState({
-      open: true,
-      title: `Duyệt bài viết "${title}"`,
-      description: "Sau khi duyệt, đội ngũ Phúc Khánh Digital sẽ đưa bài viết vào lịch đăng chính thức trên Fanpage.",
-      confirmLabel: "Duyệt bài viết",
-      errorMessage: null,
-      action: async () => {
-        const res = await fetch(`/api/portal/content/${itemId}/decision`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ decision: "approved" }),
-        });
-        const json = (await res.json()) as {
-          ok?: boolean;
-          message?: string;
-          item?: PortalOverview["contentItems"][number];
-        };
-        if (!res.ok || !json.ok || !json.item) {
-          setConfirmState((prev) => (prev ? { ...prev, errorMessage: json.message ?? "Gửi duyệt thất bại." } : null));
-          return;
-        }
-        setData((prev) =>
-          prev
-            ? { ...prev, contentItems: prev.contentItems.map((i) => (i.id === itemId ? json.item! : i)) }
-            : null,
-        );
-        setConfirmState(null);
-      },
-    });
-  }
+  const selected = data?.contentItems.find((i) => i.id === selectedId) ?? null;
 
-  function requestChanges(itemId: string, title: string) {
-    if (feedbackText.trim().length < 3) return;
-    const feedback = feedbackText.trim();
-    setConfirmState({
-      open: true,
-      title: `Gửi yêu cầu chỉnh sửa "${title}"`,
-      description: `Nội dung góp ý: "${feedback}"`,
-      confirmLabel: "Gửi yêu cầu sửa",
-      errorMessage: null,
-      action: async () => {
-        const res = await fetch(`/api/portal/content/${itemId}/decision`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ decision: "changes_requested", clientFeedback: feedback }),
-        });
-        const json = (await res.json()) as {
-          ok?: boolean;
-          message?: string;
-          item?: PortalOverview["contentItems"][number];
-        };
-        if (!res.ok || !json.ok || !json.item) {
-          setConfirmState((prev) => (prev ? { ...prev, errorMessage: json.message ?? "Gửi yêu cầu thất bại." } : null));
-          return;
-        }
-        setData((prev) =>
-          prev
-            ? { ...prev, contentItems: prev.contentItems.map((i) => (i.id === itemId ? json.item! : i)) }
-            : null,
-        );
-        setFeedbackTargetId(null);
-        setFeedbackText("");
-        setConfirmState(null);
-      },
+  async function decide(itemId: string, action: ReviewAction, feedback?: string) {
+    const res = await fetch(`/api/portal/content/${itemId}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, feedback }),
     });
+    const json = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+    if (!res.ok || !json.ok) return { ok: false, message: json.message ?? "Thao tác thất bại." };
+    setSelectedId(null);
+    setNotice(
+      action === "approve"
+        ? "Cảm ơn bạn đã duyệt. Bài viết đã được đưa vào lịch đăng."
+        : "Đã gửi yêu cầu chỉnh sửa. Đội ngũ sẽ sửa theo góp ý của bạn và gửi lại để duyệt.",
+    );
+    await loadOverview(true);
+    return { ok: true };
   }
 
   return (
@@ -235,6 +182,15 @@ export function PortalClient({ username }: { username: string }) {
               </div>
             </m.section>
 
+            {notice && (
+              <div className="flex items-start justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                <span>{notice}</span>
+                <button type="button" onClick={() => setNotice(null)} className="text-xs text-emerald-300 hover:underline">
+                  Ẩn
+                </button>
+              </div>
+            )}
+
             <div className="inline-flex rounded-xl border border-line bg-surface p-1">
               <button
                 type="button"
@@ -282,90 +238,42 @@ export function PortalClient({ username }: { username: string }) {
                   </div>
                 ) : (
                   data.contentItems.map((item) => (
-                    <div key={item.id} className="rounded-2xl border border-line bg-surface/80 p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h2 className="text-base font-semibold text-fg">{item.title}</h2>
-                        <span className="rounded-lg border border-line bg-canvas px-2.5 py-1 text-xs font-medium text-accent">
-                          {contentStatusLabel[item.status] ?? item.status}
-                        </span>
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedId(item.id)}
+                      className="group flex w-full gap-3 rounded-2xl border border-line bg-surface/80 p-4 text-left transition-colors hover:border-line-accent sm:p-5"
+                    >
+                      {item.mediaUrls[0] && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.mediaUrls[0]} alt="" className="size-16 shrink-0 rounded-xl border border-line object-cover" />
+                      )}
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={cn(
+                              "rounded-lg border px-2.5 py-0.5 text-[11px] font-semibold",
+                              item.status === "pending_client"
+                                ? "border-line-accent bg-accent-muted text-accent"
+                                : "border-line bg-canvas text-fg-2",
+                            )}
+                          >
+                            {contentStatusLabel[item.status] ?? item.status}
+                          </span>
+                          <span className="font-mono text-[11px] text-fg-3">
+                            {formatPostTime(item.publishedAt || item.scheduledAt)}
+                          </span>
+                        </div>
+                        <h2 className="text-base font-semibold text-fg group-hover:text-accent">{item.title}</h2>
+                        <p className="line-clamp-2 text-sm text-fg-2">{item.caption}</p>
+                        {item.clientFeedback && (
+                          <p className="line-clamp-2 text-xs text-amber-300">Góp ý của bạn: {item.clientFeedback}</p>
+                        )}
                       </div>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg-2">{item.caption}</p>
-
-                      {item.mediaUrls.length > 0 && (
-                        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {item.mediaUrls.map((url) => (
-                            <a
-                              key={url}
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="group relative overflow-hidden rounded-xl border border-line bg-canvas"
-                            >
-                              <img src={url} alt={item.title} className="h-36 w-full object-cover" />
-                            </a>
-                          ))}
-                        </div>
-                      )}
-
-                      {item.clientFeedback && (
-                        <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-                          Góp ý của bạn: {item.clientFeedback}
-                        </div>
-                      )}
-
-                      {item.status === "pending_client" && (
-                        <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
-                          <button
-                            type="button"
-                            onClick={() => requestApprove(item.id, item.title)}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-4 text-xs font-semibold text-canvas hover:bg-accent-hover"
-                          >
-                            <CheckCircle2 size={14} />
-                            <span>Duyệt bài này</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFeedbackTargetId(item.id);
-                              setFeedbackText("");
-                            }}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-elevated px-4 text-xs font-medium text-fg hover:border-line-strong"
-                          >
-                            <MessageSquareWarning size={14} />
-                            <span>Yêu cầu chỉnh sửa</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {feedbackTargetId === item.id && (
-                        <div className="mt-3 space-y-2 rounded-xl border border-line bg-canvas p-3">
-                          <textarea
-                            rows={2}
-                            value={feedbackText}
-                            onChange={(e) => setFeedbackText(e.target.value)}
-                            placeholder="Nhập điểm bạn muốn đội ngũ chỉnh sửa..."
-                            className="w-full rounded-lg border border-line bg-surface p-2.5 text-sm text-fg focus:border-accent focus:outline-none"
-                          />
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setFeedbackTargetId(null)}
-                              className="h-8 rounded-lg border border-line px-3 text-xs text-fg-2"
-                            >
-                              Hủy
-                            </button>
-                            <button
-                              type="button"
-                              disabled={feedbackText.trim().length < 3}
-                              onClick={() => requestChanges(item.id, item.title)}
-                              className="h-8 rounded-lg bg-accent px-3 text-xs font-semibold text-canvas disabled:opacity-50"
-                            >
-                              Gửi góp ý
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      <span className="hidden h-9 shrink-0 items-center rounded-xl border border-line bg-canvas px-3.5 text-xs font-medium text-fg-2 group-hover:text-accent sm:inline-flex">
+                        {item.actions.includes("approve") ? "Xem và duyệt" : "Xem bài"}
+                      </span>
+                    </button>
                   ))
                 )}
               </div>
@@ -407,15 +315,41 @@ export function PortalClient({ username }: { username: string }) {
         )}
       </main>
 
-      {confirmState && (
-        <ConfirmDialog
-          open={confirmState.open}
-          onClose={() => setConfirmState(null)}
-          onConfirm={confirmState.action}
-          title={confirmState.title}
-          description={confirmState.description}
-          confirmLabel={confirmState.confirmLabel}
-          errorMessage={confirmState.errorMessage}
+      {selected && (
+        <PostReviewModal
+          key={selected.id}
+          title={selected.title}
+          statusLabel={contentStatusLabel[selected.status] ?? selected.status}
+          pageName={selected.fanpageName || data?.customer.businessName || "Fanpage"}
+          logoUrl={selected.logoUrl}
+          timeLabel={formatPostTime(selected.publishedAt || selected.scheduledAt)}
+          caption={selected.caption}
+          mediaUrls={selected.mediaUrls}
+          actions={selected.actions}
+          approveLabel="Duyệt bài này"
+          approveHint="Sau khi bạn duyệt, Javis sẽ đưa bài vào lịch đăng chính thức trên Fanpage."
+          readOnlyNote={selected.status === "published" ? "Bài đã đăng." : "Bài đang được xử lý, không cần thao tác."}
+          onAction={(action, feedback) => decide(selected.id, action, feedback)}
+          onClose={() => setSelectedId(null)}
+          notes={
+            <>
+              {selected.clientFeedback && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200">
+                  <span className="font-semibold">Góp ý của bạn:</span> {selected.clientFeedback}
+                </div>
+              )}
+              {selected.publishedUrl && (
+                <a
+                  href={selected.publishedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                >
+                  Xem trên Facebook <ExternalLink size={12} />
+                </a>
+              )}
+            </>
+          }
         />
       )}
     </div>

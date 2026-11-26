@@ -28,6 +28,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }
 
-  const result = syncFromJavisLocalDir();
+  const result = await syncFromJavisLocalDir();
   return NextResponse.json({ ok: true, ...result });
 }

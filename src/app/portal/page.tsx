@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { getSessionUser } from "@/lib/auth";
+import { isDashboardRole } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Cổng Khách Hàng",
@@ -13,7 +14,7 @@ export default async function PortalPage() {
   if (!user) {
     redirect("/login?next=/portal");
   }
-  if (user.role === "ADMIN") {
+  if (isDashboardRole(user.role)) {
     redirect("/dashboard");
   }
 
