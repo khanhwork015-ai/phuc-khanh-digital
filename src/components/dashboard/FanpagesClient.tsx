@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ type FanpageItem = {
   businessName: string;
   contractStatus: string;
   accountCount: number;
+  requireCustomerApproval: boolean;
   counts: {
     pending_review: number;
     pending_client: number;
@@ -26,11 +27,13 @@ type FanpageItem = {
 
 type FilterMode = "all" | "need_admin" | "need_client" | "no_account" | "empty";
 
-export function FanpagesClient() {
+export function FanpagesClient({ canToggle = false }: { canToggle?: boolean }) {
   const [items, setItems] = useState<FanpageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterMode>("all");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
   async function loadFanpages() {
     setLoading(true);
@@ -42,6 +45,61 @@ export function FanpagesClient() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleToggleCustomerApproval(fp: FanpageItem) {
+    if (!canToggle || togglingId === fp.id) return;
+
+    const nextValue = !fp.requireCustomerApproval;
+    if (nextValue && fp.accountCount === 0) {
+      setNotice({
+        type: "error",
+        text: `Fanpage "${fp.businessName}" chưa có tài khoản khách. Vui lòng gắn ít nhất 1 tài khoản khách trước khi bật.`,
+      });
+      return;
+    }
+
+    setNotice(null);
+    setTogglingId(fp.id);
+    setItems((prev) =>
+      prev.map((item) => (item.id === fp.id ? { ...item, requireCustomerApproval: nextValue } : item)),
+    );
+
+    try {
+      const res = await fetch(`/api/admin/fanpages/${fp.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requireCustomerApproval: nextValue }),
+      });
+      const json = (await res.json()) as { ok?: boolean; message?: string; requireCustomerApproval?: boolean };
+      if (!res.ok || !json.ok) {
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === fp.id ? { ...item, requireCustomerApproval: !nextValue } : item,
+          ),
+        );
+        setNotice({
+          type: "error",
+          text: json.message ?? "Không thể cập nhật chế độ duyệt cho Fanpage.",
+        });
+        return;
+      }
+      setNotice({
+        type: "success",
+        text: nextValue
+          ? `Đã bật Cần Khách Duyệt cho "${fp.businessName}".`
+          : `Đã chuyển "${fp.businessName}" sang chỉ Admin duyệt.`,
+      });
+    } catch {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === fp.id ? { ...item, requireCustomerApproval: !nextValue } : item,
+        ),
+      );
+      setNotice({ type: "error", text: "Lỗi kết nối khi cập nhật chế độ duyệt." });
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -168,6 +226,28 @@ export function FanpagesClient() {
         </div>
       </div>
 
+      {notice && (
+        <div
+          role="status"
+          className={cn(
+            "flex items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 text-xs font-medium",
+            notice.type === "error"
+              ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200",
+          )}
+        >
+          <span>{notice.text}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label="Đóng thông báo"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-current hover:bg-white/10"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="rounded-2xl border border-line bg-surface/60 p-8 text-center text-sm text-fg-2">
           Đang tải danh sách Fanpages...
@@ -178,7 +258,7 @@ export function FanpagesClient() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-line bg-surface/80">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[880px] text-left text-sm">
             <thead>
               <tr className="border-b border-line bg-elevated/60 font-mono text-[11px] uppercase tracking-wider text-fg-3">
                 <th className="px-4 py-3">Fanpage / Brand</th>
@@ -188,6 +268,7 @@ export function FanpagesClient() {
                 <th className="px-4 py-3">Chờ đăng</th>
                 <th className="px-4 py-3">Đã đăng</th>
                 <th className="px-4 py-3">Tài khoản</th>
+                <th className="px-4 py-3">Cần khách duyệt</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -222,6 +303,55 @@ export function FanpagesClient() {
                         Chưa gắn
                       </Link>
                     )}
+                  </td>
+                  <td className="px-4 py-2">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={fp.requireCustomerApproval}
+                      aria-label={`Cần khách duyệt cho ${fp.businessName}`}
+                      aria-disabled={!canToggle || fp.accountCount === 0}
+                      disabled={!canToggle || togglingId === fp.id}
+                      onClick={() => void handleToggleCustomerApproval(fp)}
+                      title={
+                        !canToggle
+                          ? "Chỉ Admin được thay đổi"
+                          : fp.accountCount === 0
+                            ? "Cần gắn ít nhất 1 tài khoản khách để bật"
+                            : fp.requireCustomerApproval
+                              ? "Đang bật: Cần khách duyệt"
+                              : "Đang tắt: Chỉ Admin duyệt"
+                      }
+                      className={cn(
+                        "inline-flex min-h-[44px] items-center gap-2.5 rounded-xl px-1.5 text-xs font-medium transition-opacity",
+                        !canToggle && "cursor-not-allowed opacity-60",
+                        canToggle && fp.accountCount === 0 && "cursor-not-allowed opacity-50",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
+                          fp.requireCustomerApproval
+                            ? "border-violet-400/60 bg-violet-500/80"
+                            : "border-line-strong bg-elevated",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "inline-block h-4 w-4 rounded-full bg-white shadow transition-transform",
+                            fp.requireCustomerApproval ? "translate-x-6" : "translate-x-1",
+                          )}
+                        />
+                      </span>
+                      <span
+                        className={cn(
+                          "whitespace-nowrap text-[11px]",
+                          fp.requireCustomerApproval ? "text-violet-300" : "text-fg-3",
+                        )}
+                      >
+                        {fp.requireCustomerApproval ? "Bật" : "Chỉ Admin"}
+                      </span>
+                    </button>
                   </td>
                 </tr>
               ))}

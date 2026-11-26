@@ -36,16 +36,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const db = getSqliteDb();
   const existing = db
-    .prepare("SELECT id, customer_id AS customerId, javis_item_id AS file FROM content_items WHERE id = ? LIMIT 1")
-    .get(id) as { id: string; customerId: string; file: string } | undefined;
+    .prepare(
+      `SELECT
+        ci.id,
+        ci.customer_id AS customerId,
+        ci.javis_item_id AS file,
+        c.require_customer_approval AS requireCustomerApproval
+       FROM content_items ci
+       JOIN customers c ON c.id = ci.customer_id
+       WHERE ci.id = ?
+       LIMIT 1`,
+    )
+    .get(id) as { id: string; customerId: string; file: string; requireCustomerApproval: number } | undefined;
   if (!existing) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy bài viết." }, { status: 404 });
   }
 
-  // The post goes to the customer only when that fanpage has an active customer account.
+  // The post goes to the customer only when the fanpage enables customer approval and has an active customer account.
   const customerAccount = db
     .prepare("SELECT 1 FROM users WHERE role = 'CUSTOMER' AND is_active = 1 AND customer_id = ? LIMIT 1")
     .get(existing.customerId);
+  const needsCustomer = Boolean(existing.requireCustomerApproval) && Boolean(customerAccount);
 
   const result = await decideBridgePost({
     file: existing.file,
@@ -54,7 +65,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     actorUsername: auth.user.username,
     actorName: `Admin ${auth.user.username}`,
     feedback: parsed.data.feedback,
-    needsCustomer: Boolean(customerAccount),
+    needsCustomer,
   });
   await syncFromJavisLocalDir();
 

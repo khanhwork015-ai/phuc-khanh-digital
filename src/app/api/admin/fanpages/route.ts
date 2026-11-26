@@ -10,6 +10,7 @@ type CustomerRow = {
   pageId: string | null;
   businessName: string;
   contractStatus: string;
+  requireCustomerApproval: number;
 };
 
 type ContentCountRow = {
@@ -38,7 +39,8 @@ export async function GET() {
         javis_client_slug AS javisClientSlug,
         page_id AS pageId,
         business_name AS businessName,
-        contract_status AS contractStatus
+        contract_status AS contractStatus,
+        require_customer_approval AS requireCustomerApproval
        FROM customers
        ORDER BY business_name ASC`,
     )
@@ -92,9 +94,11 @@ export async function GET() {
       published: 0,
       total: 0,
     };
+    const accountCount = accountMap.get(c.id) ?? 0;
     return {
       ...c,
-      accountCount: accountMap.get(c.id) ?? 0,
+      accountCount,
+      requireCustomerApproval: Boolean(c.requireCustomerApproval) && accountCount > 0,
       counts,
     };
   });

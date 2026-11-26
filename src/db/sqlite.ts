@@ -26,6 +26,7 @@ function initSchema(db: DatabaseSync) {
       source TEXT NOT NULL DEFAULT 'offline_contract',
       contract_status TEXT NOT NULL DEFAULT 'active',
       monthly_fee INTEGER NOT NULL DEFAULT 0,
+      require_customer_approval INTEGER NOT NULL DEFAULT 0,
       notes TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -95,6 +96,19 @@ function initSchema(db: DatabaseSync) {
   const userCols = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
   if (!userCols.some((c) => c.name === "pin_hash")) {
     db.exec("ALTER TABLE users ADD COLUMN pin_hash TEXT;");
+  }
+
+  const customerCols = db.prepare("PRAGMA table_info(customers)").all() as Array<{ name: string }>;
+  if (!customerCols.some((c) => c.name === "require_customer_approval")) {
+    db.exec(`
+      ALTER TABLE customers ADD COLUMN require_customer_approval INTEGER NOT NULL DEFAULT 0;
+      UPDATE customers
+      SET require_customer_approval = 1
+      WHERE EXISTS (
+        SELECT 1 FROM users
+        WHERE users.role = 'CUSTOMER' AND users.is_active = 1 AND users.customer_id = customers.id
+      );
+    `);
   }
 
   const adminUsername = process.env.SEED_ADMIN_USERNAME?.trim();

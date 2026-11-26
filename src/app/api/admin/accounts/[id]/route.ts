@@ -32,8 +32,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const db = getSqliteDb();
-  const current = db.prepare("SELECT id, is_active, password_hash, pin_hash FROM users WHERE id = ?").get(id) as
-    | { id: string; is_active: number; password_hash: string; pin_hash: string | null }
+  const current = db
+    .prepare("SELECT id, role, customer_id, is_active, password_hash, pin_hash FROM users WHERE id = ?")
+    .get(id) as
+    | {
+        id: string;
+        role: string;
+        customer_id: string | null;
+        is_active: number;
+        password_hash: string;
+        pin_hash: string | null;
+      }
     | undefined;
 
   if (!current) {
@@ -66,6 +75,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     db.prepare("DELETE FROM sessions WHERE user_id = ?").run(id);
   }
 
+  if (current.role === "CUSTOMER" && current.customer_id && nextActive === 0) {
+    const remaining = db
+      .prepare(
+        "SELECT count(*) AS total FROM users WHERE role = 'CUSTOMER' AND is_active = 1 AND customer_id = ?",
+      )
+      .get(current.customer_id) as { total: number };
+    if (remaining.total === 0) {
+      db.prepare("UPDATE customers SET require_customer_approval = 0, updated_at = ? WHERE id = ?").run(
+        now,
+        current.customer_id,
+      );
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     account: { id, isActive: nextActive === 1, hasPin: Boolean(nextPinHash) },
@@ -85,8 +108,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   const db = getSqliteDb();
-  const target = db.prepare("SELECT id, role FROM users WHERE id = ? LIMIT 1").get(id) as
-    | { id: string; role: string }
+  const target = db.prepare("SELECT id, role, customer_id FROM users WHERE id = ? LIMIT 1").get(id) as
+    | { id: string; role: string; customer_id: string | null }
     | undefined;
 
   if (!target) {
@@ -107,6 +130,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   db.prepare("DELETE FROM sessions WHERE user_id = ?").run(id);
   db.prepare("DELETE FROM users WHERE id = ?").run(id);
+
+  if (target.role === "CUSTOMER" && target.customer_id) {
+    const remaining = db
+      .prepare(
+        "SELECT count(*) AS total FROM users WHERE role = 'CUSTOMER' AND is_active = 1 AND customer_id = ?",
+      )
+      .get(target.customer_id) as { total: number };
+    if (remaining.total === 0) {
+      db.prepare("UPDATE customers SET require_customer_approval = 0, updated_at = ? WHERE id = ?").run(
+        new Date().toISOString(),
+        target.customer_id,
+      );
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }
