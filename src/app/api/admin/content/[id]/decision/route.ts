@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSqliteDb } from "@/db/sqlite";
 import { requireAdminApi } from "@/lib/api-auth";
-import { decideBridgePost } from "@/lib/approval-bridge";
+import { decideBridgePost, listBrandLinks } from "@/lib/approval-bridge";
 import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 const adminDecisionSchema = z
@@ -41,15 +41,39 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         ci.id,
         ci.customer_id AS customerId,
         ci.javis_item_id AS file,
+        ci.scheduled_at AS scheduledAt,
+        c.javis_client_slug AS customerSlug,
         c.require_customer_approval AS requireCustomerApproval
        FROM content_items ci
        JOIN customers c ON c.id = ci.customer_id
        WHERE ci.id = ?
        LIMIT 1`,
     )
-    .get(id) as { id: string; customerId: string; file: string; requireCustomerApproval: number } | undefined;
+    .get(id) as
+    | {
+        id: string;
+        customerId: string;
+        file: string;
+        scheduledAt: string | null;
+        customerSlug: string | null;
+        requireCustomerApproval: number;
+      }
+    | undefined;
   if (!existing) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy bài viết." }, { status: 404 });
+  }
+
+  if (parsed.data.action === "approve" && !existing.scheduledAt) {
+    const brandLinks = await listBrandLinks().catch(() => null);
+    const slug = existing.customerSlug ?? "";
+    const isConnected =
+      brandLinks?.brands?.length ? Boolean(brandLinks.brands.find((b) => b.slug === slug)?.connected) : true;
+    if (isConnected) {
+      return NextResponse.json(
+        { ok: false, message: "Vui lòng đặt lịch đăng (thủ công hoặc Tự sắp lịch) trước khi gửi khách duyệt." },
+        { status: 400 },
+      );
+    }
   }
 
   // The post goes to the customer only when the fanpage enables customer approval and has an active customer account.

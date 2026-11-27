@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, RefreshCw, Search, X } from "lucide-react";
+import { CalendarClock, ChevronDown, RefreshCw, Search, Wand2, X } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatPostTime } from "@/components/content/FacebookPostPreview";
@@ -74,6 +74,8 @@ export function ContentQueueClient({
   const [search, setSearch] = useState<string>("");
   const [syncInfo, setSyncInfo] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, string>>({});
+  const [schedulingId, setSchedulingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!brandMenuOpen) return;
@@ -190,6 +192,26 @@ export function ContentQueueClient({
     setNotice(data.message ?? "Đã ghi nhận.");
     await loadContent(true);
     return { ok: true };
+  }
+
+  async function saveSchedule(item: ContentRow, payload: { auto: true } | { scheduledAt: string }) {
+    setSchedulingId(item.id);
+    try {
+      const res = await fetch(`/api/admin/content/${item.id}/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+      if (!res.ok || !data.ok) {
+        setNotice(data.message ?? "Không thể cập nhật lịch đăng.");
+        return;
+      }
+      setNotice(data.message ?? "Đã cập nhật lịch đăng.");
+      await loadContent(true);
+    } finally {
+      setSchedulingId(null);
+    }
   }
 
   return (
@@ -466,10 +488,67 @@ export function ContentQueueClient({
               mediaUrls={item.mediaUrls}
               actions={canEdit ? item.actions : []}
               approveLabel="Gửi khách duyệt"
+              approveDisabledReason={
+                !isDemo && canEdit && item.actions.includes("approve") && !item.scheduledAt
+                  ? "Vui lòng đặt lịch đăng (thủ công hoặc Tự sắp lịch) trước khi gửi khách duyệt."
+                  : undefined
+              }
               approveHint={
                 isDemo
                   ? "Admin duyệt bài demo này. Nếu khách đã có tài khoản Portal, bài chuyển sang Chờ khách duyệt để khách xem mẫu (chưa hẹn đăng Facebook vì chưa gắn Fanpage)."
                   : "Admin duyệt bài này. Nếu fanpage có tài khoản khách, bài chuyển sang Chờ khách duyệt; nếu không, Javis hẹn lịch đăng ngay."
+              }
+              scheduleControl={
+                !isDemo && canEdit && item.actions.includes("approve") ? (
+                  <div className="rounded-xl border border-line bg-canvas/80 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg">
+                        <CalendarClock size={14} className="text-accent" />
+                        Lịch đăng trước khi gửi khách
+                      </span>
+                      <button
+                        type="button"
+                        disabled={schedulingId === item.id}
+                        onClick={() => void saveSchedule(item, { auto: true })}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-accent bg-accent-muted px-2.5 text-[11px] font-semibold text-accent hover:bg-accent hover:text-canvas disabled:opacity-50"
+                      >
+                        <Wand2 size={12} />
+                        Tự sắp lịch
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <input
+                        type="datetime-local"
+                        value={
+                          scheduleDrafts[item.id] ??
+                          (item.scheduledAt
+                            ? (() => {
+                                const d = new Date(item.scheduledAt);
+                                if (Number.isNaN(d.getTime())) return "";
+                                const pad = (n: number) => String(n).padStart(2, "0");
+                                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                              })()
+                            : "")
+                        }
+                        onChange={(e) =>
+                          setScheduleDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))
+                        }
+                        className="h-8 flex-1 rounded-lg border border-line bg-surface px-2.5 text-xs text-fg focus:border-accent focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        disabled={schedulingId === item.id || !(scheduleDrafts[item.id] || item.scheduledAt)}
+                        onClick={() => {
+                          const val = scheduleDrafts[item.id];
+                          if (val) void saveSchedule(item, { scheduledAt: val });
+                        }}
+                        className="inline-flex h-8 items-center rounded-lg border border-line bg-surface px-3 text-[11px] font-semibold text-fg hover:border-line-strong disabled:opacity-45"
+                      >
+                        Lưu lịch
+                      </button>
+                    </div>
+                  </div>
+                ) : undefined
               }
               readOnlyNote={canEdit ? undefined : "Chế độ chỉ xem (không có quyền thao tác duyệt bài)."}
               onAction={(action, feedback) => decide(item, action, feedback)}

@@ -24,9 +24,11 @@ export function PostReviewModal({
   caption,
   mediaUrls,
   notes,
+  scheduleControl,
   actions,
   approveLabel,
   approveHint,
+  approveDisabledReason,
   readOnlyNote,
   onAction,
   onClose,
@@ -41,9 +43,11 @@ export function PostReviewModal({
   caption: string;
   mediaUrls: string[];
   notes?: ReactNode;
+  scheduleControl?: ReactNode;
   actions: ReviewAction[];
   approveLabel: string;
   approveHint: string;
+  approveDisabledReason?: string;
   readOnlyNote?: string;
   onAction: (action: ReviewAction, feedback?: string) => Promise<ActionResult>;
   onClose?: () => void;
@@ -91,7 +95,12 @@ export function PostReviewModal({
     setError(null);
     try {
       const res = await onAction(action, feedback);
-      if (!res.ok) setError(res.message ?? "Thao tác thất bại.");
+      if (!res.ok) {
+        setError(res.message ?? "Thao tác thất bại.");
+      } else {
+        setDialog("none");
+        setReason("");
+      }
     } catch {
       setError("Lỗi kết nối máy chủ.");
     } finally {
@@ -156,6 +165,7 @@ export function PostReviewModal({
           onOpenImage={setLightbox}
         />
         {notes}
+        {scheduleControl}
         {error && dialog === "none" && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-200">{error}</div>
         )}
@@ -191,9 +201,10 @@ export function PostReviewModal({
             {canApprove && (
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || Boolean(approveDisabledReason)}
+                title={approveDisabledReason}
                 onClick={() => openDialog("approve")}
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-5 text-xs font-bold text-canvas hover:bg-accent-hover"
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-5 text-xs font-bold text-canvas hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Send size={14} />
                 {approveLabel}
@@ -202,6 +213,11 @@ export function PostReviewModal({
           </>
         )}
       </div>
+      {canApprove && approveDisabledReason && (
+        <div className="border-t border-line bg-amber-500/5 px-4 py-2 text-right text-[11px] text-amber-300 sm:px-5">
+          {approveDisabledReason}
+        </div>
+      )}
     </div>
   );
 

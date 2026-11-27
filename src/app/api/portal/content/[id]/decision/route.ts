@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSqliteDb } from "@/db/sqlite";
 import { requireSessionApi } from "@/lib/api-auth";
-import { decideBridgePost } from "@/lib/approval-bridge";
+import { decideBridgePost, listBrandLinks } from "@/lib/approval-bridge";
 import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 const decisionSchema = z
@@ -49,6 +49,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   if (!existing || !existing.slug) {
     return NextResponse.json({ ok: false, message: "Không tìm thấy bài viết thuộc tài khoản của bạn." }, { status: 404 });
+  }
+
+  if (parsed.data.action === "approve") {
+    const brandLinks = await listBrandLinks().catch(() => null);
+    if (brandLinks?.brands?.length) {
+      const connected = Boolean(brandLinks.brands.find((b) => b.slug === existing.slug)?.connected);
+      if (!connected) {
+        return NextResponse.json(
+          { ok: false, message: "Fanpage chưa kết nối — chế độ xem bài mẫu chỉ hỗ trợ gửi yêu cầu sửa." },
+          { status: 409 },
+        );
+      }
+    }
   }
 
   // The engine re-checks visibility and the allowed step (e.g. not before Admin approval).

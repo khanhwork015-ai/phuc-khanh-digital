@@ -5,6 +5,7 @@ import {
   customerActions,
   customerCanSee,
   engineTimeToIso,
+  listBrandLinks,
   listBridgePosts,
   mapBridgeStatus,
   mediaUrlFor,
@@ -66,7 +67,13 @@ export async function GET() {
     .get(auth.user.customerId) as { slug: string | null } | undefined;
   const slug = slugRow?.slug ?? "";
 
-  const posts = slug ? (await listBridgePosts().catch(() => [])).filter((p) => p.fanpage_slug === slug) : [];
+  const [allPosts, brandLinks] = await Promise.all([
+    listBridgePosts().catch(() => []),
+    listBrandLinks().catch(() => null),
+  ]);
+  const posts = slug ? allPosts.filter((p) => p.fanpage_slug === slug) : [];
+  const brandLink = slug ? brandLinks?.brands?.find((b) => b.slug === slug) : undefined;
+  const fanpageConnected = brandLinks?.brands?.length ? Boolean(brandLink?.connected) : true;
   const rows = db
     .prepare("SELECT id, javis_item_id AS file FROM content_items WHERE customer_id = ?")
     .all(auth.user.customerId) as Array<{ id: string; file: string }>;
@@ -75,20 +82,23 @@ export async function GET() {
   const order = ["Chờ khách duyệt", "Sửa lại", "Đã duyệt", "Chờ đăng", "Đã đăng"];
   const contentItems = posts
     .filter((p) => customerCanSee(p) && idByFile.has(p.file))
-    .map((p) => ({
-      id: idByFile.get(p.file)!,
-      title: p.title,
-      caption: p.body,
-      mediaUrls: p.images.map(mediaUrlFor),
-      status: mapBridgeStatus(p.status) ?? "pending_review",
-      clientFeedback: p.edit_requested_by_role === "customer" ? p.feedback || null : null,
-      scheduledAt: engineTimeToIso(p.publish_at || p.scheduled_at),
-      publishedAt: engineTimeToIso(p.published_at),
-      publishedUrl: p.post_id ? `https://www.facebook.com/${p.post_id}` : null,
-      fanpageName: p.fanpage_name,
-      logoUrl: p.fanpage_logo ? mediaUrlFor(p.fanpage_logo) : null,
-      actions: customerActions(p),
-    }))
+    .map((p) => {
+      const rawActions = customerActions(p);
+      return {
+        id: idByFile.get(p.file)!,
+        title: p.title,
+        caption: p.body,
+        mediaUrls: p.images.map(mediaUrlFor),
+        status: mapBridgeStatus(p.status) ?? "pending_review",
+        clientFeedback: p.edit_requested_by_role === "customer" ? p.feedback || null : null,
+        scheduledAt: engineTimeToIso(p.publish_at || p.scheduled_at),
+        publishedAt: engineTimeToIso(p.published_at),
+        publishedUrl: p.post_id ? `https://www.facebook.com/${p.post_id}` : null,
+        fanpageName: p.fanpage_name,
+        logoUrl: p.fanpage_logo ? mediaUrlFor(p.fanpage_logo) : null,
+        actions: fanpageConnected ? rawActions : rawActions.filter((a) => a === "request_edit"),
+      };
+    })
     .sort((a, b) => {
       const sa = posts.find((p) => idByFile.get(p.file) === a.id)?.status ?? "";
       const sb = posts.find((p) => idByFile.get(p.file) === b.id)?.status ?? "";
@@ -100,6 +110,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     customer,
+    fanpageConnected,
     brandAssets: assets,
     contentItems,
     internalReadyCount,

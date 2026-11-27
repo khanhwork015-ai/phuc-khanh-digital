@@ -57,6 +57,7 @@ type PortalOverview = {
     actions: ReviewAction[];
   }>;
   internalReadyCount?: number;
+  fanpageConnected?: boolean;
 };
 
 const contentStatusLabel: Record<string, string> = {
@@ -293,13 +294,24 @@ export function PortalClient({ username }: { username: string }) {
                   </div>
                 )}
 
+                {data.fanpageConnected === false && (
+                  <div className="rounded-2xl border border-line-accent bg-accent-muted/20 px-4 py-3 text-xs text-fg-2 sm:text-sm">
+                    <span className="font-semibold text-accent">Chế độ xem bài mẫu (Demo):</span> Fanpage chưa kết nối nên bạn chỉ xem trước bài viết và gửi{" "}
+                    <span className="font-medium text-fg">Yêu cầu sửa</span> nếu cần, chưa cần bấm duyệt đăng.
+                  </div>
+                )}
+
                 {contentFilter === "all" && pendingItems.length > 0 && (
                   <section className="space-y-4 rounded-2xl border border-line-accent bg-accent-muted/20 p-4 sm:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h2 className="text-sm font-semibold text-accent">
-                        Bài đang chờ bạn duyệt ({pendingItems.length})
+                        {data.fanpageConnected === false
+                          ? `Bài mẫu demo (${pendingItems.length})`
+                          : `Bài đang chờ bạn duyệt (${pendingItems.length})`}
                       </h2>
-                      <span className="text-xs text-fg-3">Ưu tiên xử lý trước giờ đăng</span>
+                      <span className="text-xs text-fg-3">
+                        {data.fanpageConnected === false ? "Xem trước và góp ý chỉnh sửa" : "Ưu tiên xử lý trước giờ đăng"}
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                       {pendingItems.map((item) => (
@@ -307,7 +319,11 @@ export function PortalClient({ username }: { username: string }) {
                           key={item.id}
                           inline
                           title={item.title}
-                          statusLabel={contentStatusLabel[item.status] ?? item.status}
+                          statusLabel={
+                            data.fanpageConnected === false && item.status === "pending_client"
+                              ? "Bài mẫu demo"
+                              : contentStatusLabel[item.status] ?? item.status
+                          }
                           pageName={item.fanpageName || data.customer.businessName || "Fanpage"}
                           logoUrl={item.logoUrl}
                           timeLabel={formatPostTime(item.publishedAt || item.scheduledAt)}

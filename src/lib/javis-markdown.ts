@@ -343,3 +343,25 @@ export function parseBrandProfileFields(text: string | null | undefined) {
     pricingLines: [] as Array<{ name: string; price: string }>,
   };
 }
+
+export function updatePostFrontmatterSchedule(markdown: string, localSchedule: string): string {
+  const match = markdown.match(/^(---\r?\n)([\s\S]*?)(\r?\n---)/);
+  if (!match) return markdown;
+  const newline = match[1].includes("\r\n") ? "\r\n" : "\n";
+  const lines = match[2].split(/\r?\n/);
+  let hasScheduledAt = false;
+  const updated = lines.map((line) => {
+    if (/^scheduled_at\s*:/.test(line)) {
+      hasScheduledAt = true;
+      return `scheduled_at: ${localSchedule}`;
+    }
+    if (/^publish_at\s*:/.test(line) && line.split(":").slice(1).join(":").trim()) {
+      return `publish_at: ${localSchedule}`;
+    }
+    return line;
+  });
+  if (!hasScheduledAt) {
+    updated.push(`scheduled_at: ${localSchedule}`);
+  }
+  return `${match[1]}${updated.join(newline)}${match[3]}${markdown.slice(match[0].length)}`;
+}
