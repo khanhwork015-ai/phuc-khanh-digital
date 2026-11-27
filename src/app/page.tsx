@@ -23,8 +23,9 @@ const faqJsonLd = {
 export default function HomePage() {
   return (
     <>
+      <div aria-hidden className="pk-gold-ambient pointer-events-none fixed inset-0 z-0" />
       <Navbar />
-      <main id="main">
+      <main id="main" className="relative z-10">
         <HeroSection />
         <PainPointsSection />
         <ProcessStepperSection />
@@ -34,7 +35,9 @@ export default function HomePage() {
         <PricingFaqSection />
         <LeadCaptureSection />
       </main>
-      <Footer />
+      <div className="relative z-10">
+        <Footer />
+      </div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}

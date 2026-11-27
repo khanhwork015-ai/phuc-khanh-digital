@@ -181,6 +181,18 @@ html.lenis body {
   background-size: 64px 64px;
 }
 
+/* Ánh sáng vàng đồng dịu quanh nền tối (ẩn ở nền sáng) */
+.pk-gold-ambient {
+  background:
+    radial-gradient(640px circle at 6% 24%, rgb(233 190 87 / 0.09), transparent 68%),
+    radial-gradient(600px circle at 94% 56%, rgb(241 170 36 / 0.08), transparent 68%),
+    radial-gradient(560px circle at 22% 90%, rgb(233 190 87 / 0.065), transparent 70%);
+}
+
+html[data-theme="light"] .pk-gold-ambient {
+  display: none;
+}
+
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;

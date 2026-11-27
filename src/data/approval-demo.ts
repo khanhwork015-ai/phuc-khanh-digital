@@ -11,7 +11,7 @@ export const approvalContent = {
     "Góp ý ngay trên bài, đội ngũ sửa rồi gửi lại",
   ],
   demoPin: "2026",
-  portalUrl: "duyet.phuckhanhdigital.vn/hoa-sua",
+  portalUrl: "duyet.phuckhanh.digital/hoa-sua",
 } as const;
 
 export const approvalStatuses = [
