@@ -188,7 +188,24 @@ export async function syncFromJavisLocalDir(): Promise<{
   return { enabled: true, customersSynced, contentSynced };
 }
 
-const BRAND_KEYWORDS = ["brand", "nhan-dien", "logo", "guideline", "palette", "mau", "font", "ho-so"];
+const BRAND_KEYWORDS = [
+  "brand",
+  "nhan-dien",
+  "logo",
+  "guideline",
+  "palette",
+  "mau",
+  "font",
+  "ho-so",
+  "tu-cam",
+  "tu-can-tranh",
+  "forbidden",
+  "xung-ho",
+  "giong-van",
+  "tone",
+  "quy-tac",
+  "rules",
+];
 const POST_SUBDIRS = new Set([
   "posts",
   "bai-viet",
@@ -281,7 +298,7 @@ function syncBrandAssetsFromJavis(
         const fileUrl = `/api/local-media?path=${encodeURIComponent(relFromFanpages)}`;
         const title = entry.name.replace(ext, "").replace(/[-_]+/g, " ").trim() || entry.name;
         const assetType = ext === ".pdf" ? "pdf" : ext === ".md" ? "guideline" : "image";
-        const contentText = ext === ".md" ? readFileSync(fullPath, "utf8").slice(0, 8000) : null;
+        const contentText = ext === ".md" ? readFileSync(fullPath, "utf8").slice(0, 24000) : null;
         const colors = extractHexColors(contentText);
         const profileFields = parseBrandProfileFields(contentText);
         const metadataJson = JSON.stringify({

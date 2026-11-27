@@ -309,8 +309,8 @@ export function parseBrandProfileFields(text: string | null | undefined) {
   }
   const avoidRaw = pickMarkdownField(
     text,
-    [/^(?:từ cần tránh|từ ngữ cần tránh|ngôn từ cần tránh|từ cấm|tránh dùng|không dùng)\s*[:：]\s*(.+)$/i],
-    [/^(?:từ cần tránh|từ ngữ cần tránh|ngôn từ cần tránh|từ cấm|tránh dùng)$/i],
+    [/^(?:các\s+)?(?:từ cần tránh|từ ngữ cần tránh|ngôn từ cần tránh|từ cấm|tránh dùng|không dùng|forbidden(?:\s+words)?)\s*[:：]\s*(.+)$/i],
+    [/^(?:các\s+)?(?:từ cần tránh|từ ngữ cần tránh|ngôn từ cần tránh|từ cấm|tránh dùng|forbidden(?:\s+words)?)$/i],
   );
   const avoidWords = avoidRaw
     ? avoidRaw
@@ -326,8 +326,8 @@ export function parseBrandProfileFields(text: string | null | undefined) {
     address: pickMarkdownField(text, [/^(?:địa chỉ|address)\s*[:：]\s*(.+)$/i]),
     pronouns: pickMarkdownField(
       text,
-      [/^(?:xưng hô|cách xưng hô|đại từ xưng hô|tự xưng|người viết xưng)\s*[:：]\s*(.+)$/i],
-      [/^(?:xưng hô|cách xưng hô|đại từ xưng hô)$/i],
+      [/^(?:các\s+)?(?:xưng hô|cách xưng hô|đại từ xưng hô|tự xưng|người viết xưng|xưng)\s*[:：]\s*(.+)$/i],
+      [/^(?:các\s+)?(?:xưng hô|cách xưng hô|đại từ xưng hô|tự xưng)$/i],
     ),
     tone: pickMarkdownField(
       text,
