@@ -54,10 +54,15 @@ html[data-theme="light"] .pk-wordmark {
 html[data-theme="light"] .pk-hero-bell-mobile-backdrop {
   background: linear-gradient(
     to bottom,
-    transparent 0%,
-    rgb(9 9 11 / 0.88) 20%,
-    rgb(9 9 11 / 0.92) 80%,
-    transparent 100%
+    rgb(9 9 11 / 0) 0%,
+    rgb(9 9 11 / 0.14) 10%,
+    rgb(9 9 11 / 0.44) 22%,
+    rgb(9 9 11 / 0.84) 40%,
+    rgb(9 9 11 / 0.92) 50%,
+    rgb(9 9 11 / 0.84) 60%,
+    rgb(9 9 11 / 0.44) 78%,
+    rgb(9 9 11 / 0.14) 90%,
+    rgb(9 9 11 / 0) 100%
   );
 }
 
