@@ -157,7 +157,7 @@ export function HeroBell() {
 
   return (
     <div className="relative h-full w-full p-4">
-      <div className="pk-hero-bell-halo absolute inset-[12%] rounded-full bg-accent/20 blur-3xl" />
+      <div className="absolute inset-[15%] rounded-full bg-accent/25 blur-3xl" />
       <Image
         src={assetPath("/brand/logo-mark.svg")}
         alt=""
