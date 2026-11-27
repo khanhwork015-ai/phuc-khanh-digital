@@ -165,7 +165,7 @@ export function HeroBell() {
         height={538}
         unoptimized
         className={cn(
-          "relative h-full w-full object-contain opacity-0 transition-opacity duration-500",
+          "pk-hero-bell relative h-full w-full object-contain opacity-0 transition-opacity duration-500",
           showFallback && !ready && "opacity-90",
         )}
       />
@@ -173,7 +173,7 @@ export function HeroBell() {
         ref={canvasRef}
         data-bell
         className={cn(
-          "pointer-events-none absolute -inset-20 h-[calc(100%+10rem)] w-[calc(100%+10rem)] scale-95 opacity-0 transition-all duration-700 ease-out",
+          "pk-hero-bell pointer-events-none absolute -inset-20 h-[calc(100%+10rem)] w-[calc(100%+10rem)] scale-95 opacity-0 transition-all duration-700 ease-out",
           ready && "scale-100 opacity-100",
         )}
       />
