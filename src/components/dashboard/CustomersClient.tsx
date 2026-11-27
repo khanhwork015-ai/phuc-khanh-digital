@@ -257,7 +257,7 @@ export function CustomersClient({ canEdit = false }: { canEdit?: boolean }) {
             className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-canvas transition-colors hover:bg-accent-hover"
           >
             <Plus size={16} />
-            <span>Thêm khách (Offline / Mới)</span>
+            <span>Thêm khách</span>
           </button>
         )}
       </div>

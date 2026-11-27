@@ -1,7 +1,9 @@
 "use client";
 
-import { Link2, Link2Off, RefreshCw } from "lucide-react";
+import { Check, ChevronDown, Link2, Link2Off, RefreshCw } from "lucide-react";
+import { AnimatePresence, m } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 type Checklist = { logo: boolean; brand_kit: boolean; forbidden_words: boolean; posts: number };
@@ -55,7 +57,27 @@ export function FanpageLinksPanel({ onChanged }: { onChanged?: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [openMenuSlug, setOpenMenuSlug] = useState<string | null>(null);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openMenuSlug) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!menuContainerRef.current?.contains(e.target as Node)) {
+        setOpenMenuSlug(null);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenMenuSlug(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [openMenuSlug]);
 
   const load = useCallback(async (): Promise<string> => {
     try {
@@ -216,9 +238,11 @@ export function FanpageLinksPanel({ onChanged }: { onChanged?: () => void }) {
       ) : brands.length === 0 ? (
         <p className="text-sm text-fg-2">Chưa có brand nào trong hệ thống.</p>
       ) : (
-        <div className="divide-y divide-line rounded-xl border border-line">
+        <div ref={menuContainerRef} className="divide-y divide-line rounded-xl border border-line">
           {brands.map((b) => {
             const choice = picked[b.slug] ?? "";
+            const selectedPage = pages.find((p) => p.id === choice) ?? null;
+            const menuOpen = openMenuSlug === b.slug;
             return (
               <div key={b.slug} className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
@@ -253,24 +277,94 @@ export function FanpageLinksPanel({ onChanged }: { onChanged?: () => void }) {
                     </>
                   ) : (
                     <>
-                      <select
-                        value={choice}
-                        onChange={(e) => setPicked((prev) => ({ ...prev, [b.slug]: e.target.value }))}
-                        aria-label={`Chọn Fanpage cho ${b.name}`}
-                        className="h-10 min-w-[240px] rounded-xl border border-line bg-surface px-3 text-sm text-fg focus:border-accent focus:outline-none"
-                      >
-                        <option value="">Chọn Fanpage đã kết nối...</option>
-                        {pages.map((p) => (
-                          <option key={p.id} value={p.id} disabled={Boolean(p.linked_slug)}>
-                            {p.name} ({p.id}){p.linked_slug ? " - đã gắn brand khác" : ""}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          aria-expanded={menuOpen}
+                          aria-label={`Chọn Fanpage cho ${b.name}`}
+                          onClick={() => setOpenMenuSlug((prev) => (prev === b.slug ? null : b.slug))}
+                          className={cn(
+                            "inline-flex h-10 w-full min-w-[260px] items-center justify-between gap-2.5 rounded-xl border bg-canvas px-3 text-xs font-medium transition-colors sm:w-72",
+                            menuOpen || choice
+                              ? "border-line-accent text-fg"
+                              : "border-line text-fg-2 hover:border-line-strong hover:text-fg",
+                          )}
+                        >
+                          <span className="truncate">
+                            {selectedPage ? `${selectedPage.name} (${selectedPage.id})` : "Chọn Fanpage đã kết nối..."}
+                          </span>
+                          <ChevronDown
+                            size={14}
+                            className={cn("shrink-0 text-fg-3 transition-transform duration-200", menuOpen && "rotate-180")}
+                          />
+                        </button>
+
+                        <AnimatePresence>
+                          {menuOpen && (
+                            <m.div
+                              initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                              transition={{ duration: 0.16, ease: easeOutExpo }}
+                              className="absolute right-0 z-30 mt-1.5 max-h-64 w-full min-w-[280px] overflow-y-auto rounded-xl border border-line-strong bg-surface p-1.5 shadow-2xl sm:w-80"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPicked((prev) => ({ ...prev, [b.slug]: "" }));
+                                  setOpenMenuSlug(null);
+                                }}
+                                className={cn(
+                                  "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors",
+                                  !choice
+                                    ? "bg-accent-muted text-accent"
+                                    : "text-fg-2 hover:bg-elevated hover:text-fg",
+                                )}
+                              >
+                                <span>Chọn Fanpage đã kết nối...</span>
+                                {!choice && <Check size={13} className="shrink-0" />}
+                              </button>
+                              {pages.map((p) => {
+                                const disabled = Boolean(p.linked_slug);
+                                const selected = choice === p.id;
+                                return (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    disabled={disabled}
+                                    onClick={() => {
+                                      setPicked((prev) => ({ ...prev, [b.slug]: p.id }));
+                                      setOpenMenuSlug(null);
+                                    }}
+                                    className={cn(
+                                      "mt-0.5 flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors",
+                                      disabled
+                                        ? "cursor-not-allowed text-fg-3/50"
+                                        : selected
+                                          ? "bg-accent-muted font-medium text-accent"
+                                          : "text-fg-2 hover:bg-elevated hover:text-fg",
+                                    )}
+                                  >
+                                    <span className="min-w-0 truncate">
+                                      <span className="block truncate font-medium">{p.name}</span>
+                                      <span className="block font-mono text-[10px] opacity-75">
+                                        {p.id}
+                                        {p.linked_slug ? " · đã gắn brand khác" : ""}
+                                      </span>
+                                    </span>
+                                    {selected && <Check size={13} className="shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </m.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                       <button
                         type="button"
                         onClick={() => void handleLink(b)}
                         disabled={!choice || busy === b.slug}
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-xs font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-xs font-semibold text-canvas hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Link2 size={13} />
                         Gắn
