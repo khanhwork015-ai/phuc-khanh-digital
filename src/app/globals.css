@@ -47,6 +47,18 @@ html[data-theme="light"] * {
   scrollbar-color: rgb(24 24 27 / 0.22) transparent;
 }
 
+.pk-logo-light {
+  display: none;
+}
+
+html[data-theme="light"] .pk-logo-dark {
+  display: none;
+}
+
+html[data-theme="light"] .pk-logo-light {
+  display: inline-block;
+}
+
 html[data-theme="light"] .pk-wordmark {
   filter: brightness(0.2) contrast(1.25);
 }

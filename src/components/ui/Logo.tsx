@@ -12,15 +12,26 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
  */
 export function LogoMark({ className, priority }: { className?: string; priority?: boolean }) {
   return (
-    <Image
-      src={`${basePath}/brand/logo-mark.svg`}
-      alt=""
-      width={612}
-      height={530}
-      unoptimized
-      priority={priority}
-      className={cn("h-10 w-auto", className)}
-    />
+    <>
+      <Image
+        src={`${basePath}/brand/logo-mark.svg`}
+        alt=""
+        width={612}
+        height={530}
+        unoptimized
+        priority={priority}
+        className={cn("pk-logo-dark h-10 w-auto", className)}
+      />
+      <Image
+        src={`${basePath}/brand/logo-mark-light.svg`}
+        alt=""
+        width={612}
+        height={530}
+        unoptimized
+        priority={priority}
+        className={cn("pk-logo-light h-10 w-auto", className)}
+      />
+    </>
   );
 }
 
@@ -35,7 +46,16 @@ export function Logo({ className }: { className?: string }) {
         height={168}
         unoptimized
         priority
-        className="pk-wordmark h-[26px] w-auto"
+        className="pk-logo-dark h-[26px] w-auto"
+      />
+      <Image
+        src={`${basePath}/brand/logo-wordmark-light.svg`}
+        alt="Phúc Khánh Digital"
+        width={1012}
+        height={168}
+        unoptimized
+        priority
+        className="pk-logo-light h-[26px] w-auto"
       />
     </span>
   );

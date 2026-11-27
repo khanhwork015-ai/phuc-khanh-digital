@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="430 104 656 538" width="656" height="538" role="img" aria-label="Phúc Khánh Digital">
+<defs>
+ <linearGradient id="gold" x1=".15" y1="0" x2=".8" y2="1" gradientUnits="objectBoundingBox">
+  <stop stop-color="#fde047"/>
+  <stop offset=".25" stop-color="#eab308"/>
+  <stop offset=".55" stop-color="#ca8a04"/>
+  <stop offset=".85" stop-color="#a16207"/>
+  <stop offset="1" stop-color="#713f12"/>
+ </linearGradient>
+ <linearGradient id="arch" x1="0" y1="0" x2="1" y2=".7">
+  <stop stop-color="#facc15"/>
+  <stop offset=".4" stop-color="#d97706"/>
+  <stop offset="1" stop-color="#78350f"/>
+ </linearGradient>
+ <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+  <stop stop-color="#ca8a04"/>
+  <stop offset=".25" stop-color="#facc15"/>
+  <stop offset=".55" stop-color="#b45309"/>
+  <stop offset=".85" stop-color="#eab308"/>
+  <stop offset="1" stop-color="#854d0e"/>
+ </linearGradient>
+ <linearGradient id="inside" x1="0" y1="0" x2="0" y2="1">
+  <stop stop-color="#78350f"/>
+  <stop offset=".35" stop-color="#1c1917"/>
+  <stop offset=".75" stop-color="#09090b"/>
+  <stop offset="1" stop-color="#92400e"/>
+ </linearGradient>
+ <radialGradient id="clapper" cx=".65" cy="1" r="1">
+  <stop stop-color="#fde047"/>
+  <stop offset=".35" stop-color="#d97706"/>
+  <stop offset=".7" stop-color="#92400e"/>
+  <stop offset="1" stop-color="#451a03"/>
+ </radialGradient>
+</defs>
+<g id="bell-logo">
+ <path d="M735 179C733 144 759 116 790 118C826 118 849 147 845 190L825 181C830 159 812 137 792 137C769 136 753 152 754 175Z" fill="url(#gold)" stroke="#854d0e" stroke-width="2"/>
+ <path d="M610 315C647 222 710 178 784 179C863 177 919 234 942 310C909 242 864 205 803 205C737 202 682 247 653 314Z" fill="url(#arch)" stroke="#78350f" stroke-width="2"/>
+ <path d="M611 317L653 317C688 239 742 210 803 209C859 209 910 248 937 298" fill="none" stroke="#78350f" stroke-width="3.5"/>
+ <path id="letter-p" d="M542 513L618 327H750C786 327 799 346 794 370C787 409 759 430 720 431H639L651 400H716C733 400 747 391 752 378C758 362 749 355 733 355H653L598 493Z" fill="url(#gold)" stroke="#78350f" stroke-width="2.5"/>
+ <path d="M543 516L599 496L654 358H733M640 434H718C762 434 788 407 794 377" fill="none" stroke="#713f12" stroke-width="3.5"/>
+ <path id="letter-k" d="M766 473L824 327H864L836 398L929 327H972L881 399L933 455L890 467L848 414L826 426L808 473Z" fill="url(#gold)" stroke="#78350f" stroke-width="2.5"/>
+ <path d="M767 475H809L827 428L846 418L889 469L933 457" fill="none" stroke="#713f12" stroke-width="3"/>
+ <g fill="url(#gold)" stroke="#78350f" stroke-width="1.8">
+  <path d="M981 297H1005V323H981Z"/>
+  <path d="M1014 263H1037V286H1014Z"/>
+  <path d="M1023 323H1037V338H1023Z"/>
+  <path d="M1056 246H1066V256H1056Z"/>
+ </g>
+ <path d="M539 548L526 573C548 612 956 621 1008 576L961 486L974 537C891 508 674 517 539 548Z" fill="url(#gold)" stroke="#78350f" stroke-width="2"/>
+ <ellipse cx="768" cy="572" rx="239" ry="31" fill="url(#inside)" stroke="#854d0e" stroke-width="2.5"/>
+ <path d="M720 555C709 589 733 620 767 620C802 621 826 588 818 555Z" fill="url(#clapper)" stroke="#78350f" stroke-width="2"/>
+ <path d="M568 439C498 477 477 506 500 520C533 542 678 523 801 501C934 477 1022 446 1028 405C1033 382 1004 364 969 355C1015 362 1055 381 1049 408C1039 456 936 484 811 510C676 538 512 561 473 533C438 507 507 461 568 439Z" fill="url(#sweep)" stroke="#78350f" stroke-width="1.8"/>
+ <path d="M534 558C626 522 910 514 1007 573C919 538 656 527 529 573" fill="url(#sweep)" stroke="#78350f" stroke-width="1.8"/>
+</g>
+</svg>
