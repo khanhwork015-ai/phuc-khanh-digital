@@ -95,7 +95,6 @@ export function HeroBell() {
           return;
         }
         scene = new BellScene(canvas, svgText, { lite: mode === "lite" });
-        scene.setTheme(document.documentElement.dataset.theme === "light");
         scene.onContextLost = () => {
           teardown();
           setShowFallback(true);
@@ -136,11 +135,6 @@ export function HeroBell() {
       else scene.start();
     };
 
-    const themeObserver = new MutationObserver(() => {
-      scene?.setTheme(document.documentElement.dataset.theme === "light");
-    });
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-
     io.observe(canvas);
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("scroll", syncScroll, { passive: true });
@@ -152,7 +146,6 @@ export function HeroBell() {
     return () => {
       cancelled = true;
       window.clearTimeout(resizeTimer);
-      themeObserver.disconnect();
       io.disconnect();
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("scroll", syncScroll);
