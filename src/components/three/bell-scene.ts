@@ -143,8 +143,8 @@ export class BellScene {
       this.bodyMaterial.emissiveIntensity = isLight ? 0.25 : this.lite ? 0.4 : 0;
     }
     if (this.letterMaterial) {
-      this.letterMaterial.color.setHex(isLight ? 0xa16207 : 0xf8ecde);
-      this.letterMaterial.metalness = isLight ? 0.35 : this.lite ? 0.35 : 0.85;
+      this.letterMaterial.color.setHex(isLight ? 0xc58b16 : 0xf8ecde);
+      this.letterMaterial.metalness = isLight ? (this.lite ? 0.42 : 0.78) : (this.lite ? 0.35 : 0.85);
       this.letterMaterial.roughness = isLight ? 0.28 : this.lite ? 0.22 : 0.18;
       this.letterMaterial.emissive.setHex(isLight ? 0x3b2304 : this.lite ? 0x3d372e : 0x000000);
       this.letterMaterial.emissiveIntensity = isLight ? 0.25 : this.lite ? 0.4 : 0;
