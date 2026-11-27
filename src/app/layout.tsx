@@ -61,7 +61,7 @@ export const viewport: Viewport = {
   colorScheme: "dark light",
 };
 
-const themeInitScript = `(function(){try{var p=localStorage.getItem('pkd-theme');var r=(p==='light'||p==='dark')?p:(p==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):'dark');document.documentElement.dataset.theme=r;document.documentElement.style.colorScheme=r;}catch(e){}})();`;
+const themeInitScript = `(function(){try{var p=localStorage.getItem('pkd-theme');var r=(p==='light'||p==='dark')?p:(p==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):'dark');document.documentElement.dataset.theme=r;document.documentElement.style.colorScheme=r;}catch(e){}try{var clean=function(root){if(!root||!root.querySelectorAll)return;var els=root.querySelectorAll('[bis_skin_checked]');for(var i=0;i<els.length;i++)els[i].removeAttribute('bis_skin_checked');};clean(document);var obs=new MutationObserver(function(muts){for(var i=0;i<muts.length;i++){var m=muts[i];if(m.type==='attributes'&&m.attributeName==='bis_skin_checked'){m.target.removeAttribute('bis_skin_checked');}else if(m.type==='childList'){for(var j=0;j<m.addedNodes.length;j++){var n=m.addedNodes[j];if(n.nodeType===1){if(n.hasAttribute&&n.hasAttribute('bis_skin_checked'))n.removeAttribute('bis_skin_checked');clean(n);}}}}});obs.observe(document.documentElement,{attributes:true,attributeFilter:['bis_skin_checked'],childList:true,subtree:true});setTimeout(function(){obs.disconnect();},4000);}catch(e){}})();`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -69,7 +69,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <SmoothScrollProvider>
           {children}
         </SmoothScrollProvider>
