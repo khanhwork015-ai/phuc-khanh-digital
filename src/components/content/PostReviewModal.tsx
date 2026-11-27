@@ -30,6 +30,7 @@ export function PostReviewModal({
   readOnlyNote,
   onAction,
   onClose,
+  inline = false,
 }: {
   title: string;
   code?: string;
@@ -45,7 +46,8 @@ export function PostReviewModal({
   approveHint: string;
   readOnlyNote?: string;
   onAction: (action: ReviewAction, feedback?: string) => Promise<ActionResult>;
-  onClose: () => void;
+  onClose?: () => void;
+  inline?: boolean;
 }) {
   const [dialog, setDialog] = useState<"none" | "edit" | "approve">("none");
   const [reason, setReason] = useState("");
@@ -54,20 +56,30 @@ export function PostReviewModal({
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
+    if (inline) {
+      function onKeyInline(e: KeyboardEvent) {
+        if (e.key !== "Escape" || busy) return;
+        if (lightbox) setLightbox(null);
+        else if (dialog !== "none") setDialog("none");
+      }
+      window.addEventListener("keydown", onKeyInline);
+      return () => window.removeEventListener("keydown", onKeyInline);
+    }
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape" || busy) return;
       if (lightbox) setLightbox(null);
       else if (dialog !== "none") setDialog("none");
-      else onClose();
+      else onClose?.();
     }
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [lightbox, busy, dialog, onClose]);
+  }, [inline, lightbox, busy, dialog, onClose]);
 
   function openDialog(next: "edit" | "approve") {
     setError(null);
@@ -92,28 +104,30 @@ export function PostReviewModal({
   const canRetry = actions.includes("retry_schedule");
   const reasonOk = reason.trim().length >= 3;
 
-  return (
+  const cardBody = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-4"
-      onClick={() => !busy && dialog === "none" && onClose()}
+      role={inline ? undefined : "dialog"}
+      aria-modal={inline ? undefined : true}
+      aria-label={inline ? undefined : `Xem bài đăng ${title}`}
+      onClick={inline ? undefined : (e) => e.stopPropagation()}
+      className={cn(
+        "flex flex-col overflow-hidden rounded-2xl border bg-surface",
+        inline
+          ? "h-full border-line shadow-sm"
+          : "max-h-[94dvh] w-full max-w-xl border-line-strong shadow-2xl",
+      )}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Xem bài đăng ${title}`}
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line-strong bg-surface shadow-2xl"
-      >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              {code && <span className="font-mono text-xs text-fg-3">{code}</span>}
-              <span className="rounded-full border border-line-accent bg-accent-muted px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-                {statusLabel}
-              </span>
-            </div>
-            <h3 className="mt-1.5 break-words text-[15px] font-semibold leading-snug text-fg sm:text-base">{title}</h3>
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {code && <span className="font-mono text-xs text-fg-3">{code}</span>}
+            <span className="rounded-full border border-line-accent bg-accent-muted px-2.5 py-0.5 text-[11px] font-semibold text-accent">
+              {statusLabel}
+            </span>
           </div>
+          <h3 className="mt-1.5 break-words text-[15px] font-semibold leading-snug text-fg sm:text-base">{title}</h3>
+        </div>
+        {!inline && onClose && (
           <button
             type="button"
             aria-label="Đóng"
@@ -123,65 +137,86 @@ export function PostReviewModal({
           >
             <X size={16} />
           </button>
-        </div>
-
-        <div data-lenis-prevent className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 sm:p-5">
-          <FacebookPostPreview
-            pageName={pageName}
-            logoUrl={logoUrl}
-            timeLabel={timeLabel}
-            caption={caption}
-            mediaUrls={mediaUrls}
-            onOpenImage={setLightbox}
-          />
-          {notes}
-          {error && dialog === "none" && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-200">{error}</div>
-          )}
-        </div>
-
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line bg-elevated/50 px-4 py-3 sm:px-5">
-          {actions.length === 0 ? (
-            <p className="mr-auto text-xs text-fg-3">{readOnlyNote ?? "Bài này không có thao tác nào ở trạng thái hiện tại."}</p>
-          ) : (
-            <>
-              {canRetry && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void run("retry_schedule")}
-                  className="mr-auto inline-flex h-10 items-center gap-1.5 rounded-xl border border-line bg-surface px-4 text-xs font-semibold text-fg-2 hover:text-fg"
-                >
-                  {busy ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                  Hẹn đăng lại
-                </button>
-              )}
-              {canEdit && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => openDialog("edit")}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 text-xs font-semibold text-rose-300 hover:bg-rose-500/20"
-                >
-                  <MessageSquareWarning size={14} />
-                  Yêu cầu sửa
-                </button>
-              )}
-              {canApprove && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => openDialog("approve")}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-5 text-xs font-bold text-canvas hover:bg-accent-hover"
-                >
-                  <Send size={14} />
-                  {approveLabel}
-                </button>
-              )}
-            </>
-          )}
-        </div>
+        )}
       </div>
+
+      <div
+        data-lenis-prevent={inline ? undefined : true}
+        className={cn(
+          "min-h-0 flex-1 space-y-4 p-3 sm:p-5",
+          !inline && "overflow-y-auto overscroll-contain",
+        )}
+      >
+        <FacebookPostPreview
+          pageName={pageName}
+          logoUrl={logoUrl}
+          timeLabel={timeLabel}
+          caption={caption}
+          mediaUrls={mediaUrls}
+          onOpenImage={setLightbox}
+        />
+        {notes}
+        {error && dialog === "none" && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-200">{error}</div>
+        )}
+      </div>
+
+      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line bg-elevated/50 px-4 py-3 sm:px-5">
+        {actions.length === 0 ? (
+          <p className="mr-auto text-xs text-fg-3">{readOnlyNote ?? "Bài này không có thao tác nào ở trạng thái hiện tại."}</p>
+        ) : (
+          <>
+            {canRetry && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void run("retry_schedule")}
+                className="mr-auto inline-flex h-10 items-center gap-1.5 rounded-xl border border-line bg-surface px-4 text-xs font-semibold text-fg-2 hover:text-fg"
+              >
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                Hẹn đăng lại
+              </button>
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => openDialog("edit")}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 text-xs font-semibold text-rose-400 hover:bg-rose-500/20"
+              >
+                <MessageSquareWarning size={14} />
+                Yêu cầu sửa
+              </button>
+            )}
+            {canApprove && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => openDialog("approve")}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-5 text-xs font-bold text-canvas hover:bg-accent-hover"
+              >
+                <Send size={14} />
+                {approveLabel}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {inline ? (
+        cardBody
+      ) : (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-4"
+          onClick={() => !busy && dialog === "none" && onClose?.()}
+        >
+          {cardBody}
+        </div>
+      )}
 
       {dialog !== "none" && (
         <div
@@ -295,6 +330,6 @@ export function PostReviewModal({
           <img src={lightbox} alt="Xem ảnh phóng to" className="max-h-[92vh] max-w-[95vw] rounded-xl object-contain" />
         </div>
       )}
-    </div>
+    </>
   );
 }

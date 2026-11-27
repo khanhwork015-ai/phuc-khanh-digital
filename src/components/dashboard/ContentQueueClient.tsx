@@ -57,7 +57,6 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
   const [search, setSearch] = useState<string>("");
   const [syncInfo, setSyncInfo] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!brandMenuOpen) return;
@@ -137,7 +136,6 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
     });
   }, [items, brandFilter, search]);
 
-  const selected = items.find((i) => i.id === selectedId) ?? null;
   const filtered = useMemo(
     () =>
       filter === "all"
@@ -167,7 +165,6 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
     });
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
     if (!res.ok || !data.ok) return { ok: false, message: data.message ?? "Thao tác thất bại." };
-    setSelectedId(null);
     setNotice(data.message ?? "Đã ghi nhận.");
     await loadContent(true);
     return { ok: true };
@@ -423,99 +420,50 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {filtered.map((item, idx) => (
-            <m.button
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          {filtered.map((item) => (
+            <PostReviewModal
               key={item.id}
-              type="button"
-              onClick={() => setSelectedId(item.id)}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.2), ease: easeOutExpo }}
-              className="group w-full rounded-2xl border border-line bg-surface/80 p-4 text-left transition-colors hover:border-line-accent hover:bg-surface sm:p-5"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 gap-3">
-                  {item.mediaUrls[0] && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.mediaUrls[0]}
-                      alt=""
-                      className="size-16 shrink-0 rounded-xl border border-line object-cover"
-                    />
-                  )}
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs text-accent">{item.customerName}</span>
-                      <span className="rounded-lg border border-line bg-canvas px-2 py-0.5 text-[11px] font-medium text-fg-2">
-                        {item.rawStatus || statusLabel[item.status] || item.status}
-                      </span>
-                      {item.mediaUrls.length > 0 && (
-                        <span className="rounded-lg border border-line bg-elevated px-2 py-0.5 font-mono text-[10px] text-fg-3">
-                          {item.mediaUrls.length} ảnh
-                        </span>
-                      )}
+              inline
+              title={item.title}
+              code={item.code}
+              statusLabel={item.rawStatus || statusLabel[item.status] || item.status}
+              pageName={item.customerName}
+              logoUrl={item.logoUrl}
+              timeLabel={formatPostTime(item.scheduledAt)}
+              caption={item.caption}
+              mediaUrls={item.mediaUrls}
+              actions={canEdit ? item.actions : []}
+              approveLabel="Gửi khách duyệt"
+              approveHint="Admin duyệt bài này. Nếu fanpage có tài khoản khách, bài chuyển sang Chờ khách duyệt; nếu không, Javis hẹn lịch đăng ngay."
+              readOnlyNote={canEdit ? undefined : "Chế độ chỉ xem (không có quyền thao tác duyệt bài)."}
+              onAction={(action, feedback) => decide(item, action, feedback)}
+              notes={
+                <>
+                  {item.feedback && (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-300">
+                      <span className="font-semibold">
+                        Yêu cầu sửa gần nhất{item.editRequestedByRole === "customer" ? " (từ khách)" : ""}:
+                      </span>{" "}
+                      {item.feedback}
                     </div>
-                    <h2 className="text-base font-semibold text-fg transition-colors group-hover:text-accent">
-                      {item.title}
-                    </h2>
-                    <p className="font-mono text-xs text-fg-3">
-                      {item.code} · {formatPostTime(item.scheduledAt)}
-                    </p>
-                    {item.feedback && <p className="line-clamp-2 text-xs text-amber-300">Yêu cầu sửa: {item.feedback}</p>}
-                    {item.scheduleError && <p className="line-clamp-2 text-xs text-red-300">Lỗi hẹn đăng: {item.scheduleError}</p>}
-                  </div>
-                </div>
-                <span className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl border border-line bg-canvas px-3.5 text-xs font-medium text-fg-2 transition-colors group-hover:border-line-accent group-hover:text-accent">
-                  Xem bài đăng
-                </span>
-              </div>
-            </m.button>
+                  )}
+                  {item.scheduleError && (
+                    <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-300">
+                      <span className="font-semibold">Lỗi hẹn đăng:</span> {item.scheduleError}
+                    </div>
+                  )}
+                  {item.feedbackHistory && (
+                    <details className="rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-xs text-fg-2">
+                      <summary className="cursor-pointer font-semibold text-fg">Lịch sử góp ý</summary>
+                      <p className="mt-2 whitespace-pre-line">{item.feedbackHistory}</p>
+                    </details>
+                  )}
+                </>
+              }
+            />
           ))}
         </div>
-      )}
-
-      {selected && (
-        <PostReviewModal
-          key={selected.id}
-          title={selected.title}
-          code={selected.code}
-          statusLabel={selected.rawStatus || statusLabel[selected.status] || selected.status}
-          pageName={selected.customerName}
-          logoUrl={selected.logoUrl}
-          timeLabel={formatPostTime(selected.scheduledAt)}
-          caption={selected.caption}
-          mediaUrls={selected.mediaUrls}
-          actions={canEdit ? selected.actions : []}
-          approveLabel="Gửi khách duyệt"
-          approveHint="Admin duyệt bài này. Nếu fanpage có tài khoản khách, bài chuyển sang Chờ khách duyệt; nếu không, Javis hẹn lịch đăng ngay."
-          readOnlyNote={canEdit ? undefined : "Chế độ chỉ xem (không có quyền thao tác duyệt bài)."}
-          onAction={(action, feedback) => decide(selected, action, feedback)}
-          onClose={() => setSelectedId(null)}
-          notes={
-            <>
-              {selected.feedback && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200">
-                  <span className="font-semibold">
-                    Yêu cầu sửa gần nhất{selected.editRequestedByRole === "customer" ? " (từ khách)" : ""}:
-                  </span>{" "}
-                  {selected.feedback}
-                </div>
-              )}
-              {selected.scheduleError && (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-200">
-                  <span className="font-semibold">Lỗi hẹn đăng:</span> {selected.scheduleError}
-                </div>
-              )}
-              {selected.feedbackHistory && (
-                <details className="rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-xs text-fg-2">
-                  <summary className="cursor-pointer font-semibold text-fg">Lịch sử góp ý</summary>
-                  <p className="mt-2 whitespace-pre-line">{selected.feedbackHistory}</p>
-                </details>
-              )}
-            </>
-          }
-        />
       )}
     </div>
   );
