@@ -7,6 +7,7 @@ import { ScrollScale } from "@/components/motion/ScrollScale";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { heroContent } from "@/data/site-config";
+import { BrandShowcase3D } from "./BrandShowcase3D";
 import { HeroPostMockup } from "./HeroPostMockup";
 import { HeroBell } from "./hero/HeroBell";
 import { HeroScrollStage } from "./hero/HeroScrollStage";
@@ -71,6 +72,8 @@ export function HeroSection() {
       </section>
 
       <KineticMarquee />
+
+      <BrandShowcase3D />
 
       {/* Khối minh họa bài đăng thực tế tách riêng để không che chuông 3D ở Hero, phóng zoom-in + parallax khi cuộn tới */}
       <section aria-label="Minh họa bài đăng Fanpage" className="overflow-x-clip border-b border-line py-20 md:py-28">

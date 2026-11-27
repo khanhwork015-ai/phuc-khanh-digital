@@ -255,6 +255,65 @@ html[data-theme="light"] .pk-gold-ambient {
   animation: pin-shake 0.4s ease-in-out;
 }
 
+@keyframes pk-brand3d-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pk-brand3d-stage {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.pk-brand3d-bell {
+  transform-style: preserve-3d;
+  transform-origin: 50% 0%;
+  will-change: transform, opacity;
+}
+
+.pk-brand3d-face {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.pk-brand3d-sheen {
+  background: linear-gradient(
+    115deg,
+    transparent 28%,
+    rgb(255 255 255 / 0.55) 50%,
+    transparent 72%
+  );
+  mix-blend-mode: overlay;
+  transition: opacity 0.3s ease;
+}
+
+.pk-brand3d-extrude {
+  filter: brightness(0.32) sepia(0.55) saturate(1.45) contrast(1.25);
+  pointer-events: none;
+}
+
+.pk-brand3d-rays {
+  mask-image: radial-gradient(circle, #000 18%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 70%);
+  mix-blend-mode: screen;
+  animation: pk-brand3d-spin 12s linear infinite;
+}
+
+html[data-theme="light"] .pk-brand3d-rays {
+  mix-blend-mode: multiply;
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pk-brand3d-rays {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
