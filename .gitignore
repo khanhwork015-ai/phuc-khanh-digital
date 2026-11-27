@@ -12,3 +12,7 @@ data/
 # local runtime
 server.log
 server.err.log
+tools/approval-ui/data/
+tools/approval-ui/*.bak*
+tools/approval-ui/.*
+tools/approval-ui/__pycache__/
