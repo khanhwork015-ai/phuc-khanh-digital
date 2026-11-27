@@ -3,6 +3,7 @@ import {
   Box3,
   BufferAttribute,
   BufferGeometry,
+  Color,
   DirectionalLight,
   ExtrudeGeometry,
   Group,
@@ -15,8 +16,8 @@ import {
   PMREMGenerator,
   PointLight,
   Points,
-  PointsMaterial,
   Scene,
+  ShaderMaterial,
   SRGBColorSpace,
   TorusGeometry,
   Vector3,
@@ -53,6 +54,7 @@ export class BellScene {
   private ringA: Mesh | null = null;
   private ringB: Mesh | null = null;
   private particles: Points | null = null;
+  private particleScaleUniform = { value: 450 };
   private envTexture: Texture | null = null;
   private pmrem: PMREMGenerator | null = null;
   private resizeObserver: ResizeObserver;
@@ -153,7 +155,7 @@ export class BellScene {
     });
     if (this.particles) {
       this.particles.geometry.dispose();
-      (this.particles.material as PointsMaterial).dispose();
+      (this.particles.material as ShaderMaterial).dispose();
     }
     this.envTexture?.dispose();
     this.pmrem?.dispose();
@@ -228,7 +230,8 @@ export class BellScene {
   private buildParticles(): void {
     const count = this.lite ? 80 : 220;
     const positions = new Float32Array(count * 3);
-    const scales = new Float32Array(count);
+    const sizes = new Float32Array(count);
+    const opacities = new Float32Array(count);
     const spreadX = Math.max(this.bellSize.x, 400) * 3.2;
     const spreadY = Math.max(this.bellSize.y, 400) * 2.4;
     const spreadZ = 900;
@@ -237,25 +240,45 @@ export class BellScene {
       positions[i * 3] = (Math.random() - 0.5) * spreadX;
       positions[i * 3 + 1] = (Math.random() - 0.5) * spreadY;
       positions[i * 3 + 2] = (Math.random() - 0.5) * spreadZ - 120;
-      scales[i] = 0.45 + Math.pow(Math.random(), 1.6) * 1.15;
+      sizes[i] = 6 + Math.pow(Math.random(), 1.7) * 32;
+      opacities[i] = 0.38 + Math.random() * 0.48;
     }
 
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", new BufferAttribute(positions, 3));
-    geometry.setAttribute("aScale", new BufferAttribute(scales, 1));
-    const material = new PointsMaterial({
-      color: 0xa16207,
-      size: 4.2,
+    geometry.setAttribute("aSize", new BufferAttribute(sizes, 1));
+    geometry.setAttribute("aOpacity", new BufferAttribute(opacities, 1));
+    const material = new ShaderMaterial({
+      uniforms: {
+        uColor: { value: new Color(0xa16207) },
+        uScale: this.particleScaleUniform,
+      },
+      vertexShader: `
+        attribute float aSize;
+        attribute float aOpacity;
+        varying float vOpacity;
+        uniform float uScale;
+        void main() {
+          vOpacity = aOpacity;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = aSize * (uScale / -mvPosition.z);
+        }
+      `,
+      fragmentShader: `
+        varying float vOpacity;
+        uniform vec3 uColor;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.08, d) * vOpacity;
+          gl_FragColor = vec4(uColor, alpha);
+        }
+      `,
       transparent: true,
-      opacity: 0.78,
       blending: NormalBlending,
       depthWrite: false,
     });
-    material.onBeforeCompile = (shader) => {
-      shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nattribute float aScale;")
-        .replace("gl_PointSize = size;", "gl_PointSize = size * aScale;");
-    };
     this.particles = new Points(geometry, material);
     this.scene.add(this.particles);
   }
@@ -270,6 +293,7 @@ export class BellScene {
     const { clientWidth: w, clientHeight: h } = this.canvas;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
+    this.particleScaleUniform.value = h * this.renderer.getPixelRatio() * 0.5;
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
