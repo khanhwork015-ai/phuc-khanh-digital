@@ -7,6 +7,7 @@ import {
   Globe,
   Inbox,
   KeyRound,
+  Link2,
   LogOut,
   Menu,
   Palette,
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/dashboard/leads", label: "Lead", icon: Inbox, exact: false },
   { href: "/dashboard/customers", label: "Khách hàng", icon: Users, exact: false },
   { href: "/dashboard/accounts", label: "Tài khoản", icon: KeyRound, exact: false },
+  { href: "/dashboard/ket-noi", label: "Kết nối", icon: Link2, exact: false, adminOnly: true },
 ];
 
 const JAVIS_URL = "https://phuckhanhstudio.tail158e96.ts.net/";
@@ -99,7 +101,7 @@ export function DashboardShell({
         </div>
 
         <div className="mt-6 flex-1 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems.filter((item) => !item.adminOnly || role === "ADMIN").map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
