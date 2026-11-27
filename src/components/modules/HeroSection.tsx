@@ -17,7 +17,6 @@ export function HeroSection() {
     <>
       <section aria-labelledby="hero-title" className="relative isolate overflow-x-clip border-b border-line">
         <AmbientShaderCanvas className="-z-20" />
-        <div aria-hidden className="pk-hero-light-backdrop pointer-events-none absolute inset-0 -z-10" />
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-44 bg-gradient-to-b from-transparent to-canvas"

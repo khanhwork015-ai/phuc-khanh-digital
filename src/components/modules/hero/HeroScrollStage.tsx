@@ -33,10 +33,17 @@ export function HeroScrollStage({ text, bell }: HeroScrollStageProps) {
 
   const stageScale = useTransform(progress, [0, 0.65, 1], still ? [1, 1, 1] : heavy ? [1, 0.98, 0.9] : [1, 0.98, 0.95]);
   const cueOpacity = useTransform(progress, [0, 0.14], still ? [0, 0] : [1, 0]);
+  const backdropX = useTransform(progress, [0, 0.85], still ? ["0%", "0%"] : ["0%", "100%"]);
+  const backdropOpacity = useTransform(progress, [0, 0.7, 0.95], still ? [1, 1, 1] : [1, 0.6, 0]);
 
   return (
     <div ref={ref} className="relative lg:h-[185vh]">
       <div className="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden py-16 pt-24 lg:sticky lg:top-0 lg:h-screen lg:py-0 lg:pt-16">
+        <m.div
+          aria-hidden
+          style={{ x: backdropX, opacity: backdropOpacity }}
+          className="pk-hero-light-backdrop pointer-events-none absolute inset-0 -z-10 will-change-transform"
+        />
         <m.div
           style={{ scale: stageScale }}
           className="mx-auto grid w-full max-w-7xl items-center gap-10 px-5 md:px-8 lg:grid-cols-[52fr_48fr] lg:gap-8"
