@@ -33,17 +33,10 @@ export function HeroScrollStage({ text, bell }: HeroScrollStageProps) {
 
   const stageScale = useTransform(progress, [0, 0.65, 1], still ? [1, 1, 1] : heavy ? [1, 0.98, 0.9] : [1, 0.98, 0.95]);
   const cueOpacity = useTransform(progress, [0, 0.14], still ? [0, 0] : [1, 0]);
-  const backdropX = useTransform(progress, [0, 0.85], still ? ["0%", "0%"] : ["0%", "100%"]);
-  const backdropOpacity = useTransform(progress, [0, 0.7, 0.95], still ? [1, 1, 1] : [1, 0.6, 0]);
 
   return (
     <div ref={ref} className="relative lg:h-[185vh]">
       <div className="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden py-16 pt-24 lg:sticky lg:top-0 lg:h-screen lg:py-0 lg:pt-16">
-        <m.div
-          aria-hidden
-          style={{ x: backdropX, opacity: backdropOpacity }}
-          className="pk-hero-light-backdrop pointer-events-none absolute inset-0 -z-10 hidden will-change-transform lg:block"
-        />
         <m.div
           style={{ scale: stageScale }}
           className="mx-auto grid w-full max-w-7xl items-center gap-10 px-5 md:px-8 lg:grid-cols-[52fr_48fr] lg:gap-8"
@@ -57,7 +50,6 @@ export function HeroScrollStage({ text, bell }: HeroScrollStageProps) {
             style={{ y: bellY, scale: bellScale, opacity: bellOpacity }}
             className="relative mx-auto aspect-[656/538] w-[80vw] max-w-[340px] sm:w-[380px] lg:w-full lg:max-w-[500px]"
           >
-            <div className="pk-hero-bell-mobile-backdrop pointer-events-none absolute -inset-x-[30vw] -inset-y-10 -z-10 lg:hidden" />
             {bell}
           </m.div>
         </m.div>

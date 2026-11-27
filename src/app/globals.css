@@ -51,38 +51,6 @@ html[data-theme="light"] .pk-wordmark {
   filter: brightness(0.2) contrast(1.25);
 }
 
-html[data-theme="light"] .pk-hero-bell-mobile-backdrop {
-  background: linear-gradient(
-    to bottom,
-    rgb(9 9 11 / 0) 0%,
-    rgb(9 9 11 / 0.14) 10%,
-    rgb(9 9 11 / 0.36) 23%,
-    rgb(9 9 11 / 0.58) 36%,
-    rgb(9 9 11 / 0.64) 50%,
-    rgb(9 9 11 / 0.58) 64%,
-    rgb(9 9 11 / 0.36) 77%,
-    rgb(9 9 11 / 0.14) 90%,
-    rgb(9 9 11 / 0) 100%
-  );
-}
-
-@media (min-width: 1024px) {
-  html[data-theme="light"] .pk-hero-light-backdrop {
-    background: linear-gradient(
-      105deg,
-      transparent 0%,
-      transparent 38%,
-      rgb(9 9 11 / 0.52) 56%,
-      rgb(9 9 11 / 0.88) 78%,
-      rgb(9 9 11 / 0.94) 100%
-    );
-  }
-}
-
-html[data-theme="light"] .pk-hero-bell {
-  filter: drop-shadow(0 18px 34px rgb(9 9 11 / 0.35));
-}
-
 html[data-theme="light"] .hairline-grid {
   background-image:
     linear-gradient(to right, rgb(24 24 27 / 0.055) 1px, transparent 1px),

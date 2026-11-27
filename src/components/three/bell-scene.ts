@@ -11,6 +11,7 @@ import {
   MathUtils,
   Mesh,
   MeshStandardMaterial,
+  NormalBlending,
   PerspectiveCamera,
   PMREMGenerator,
   PointLight,
@@ -53,6 +54,11 @@ export class BellScene {
   private ringA: Mesh | null = null;
   private ringB: Mesh | null = null;
   private particles: Points | null = null;
+  private bodyMaterial: MeshStandardMaterial | null = null;
+  private letterMaterial: MeshStandardMaterial | null = null;
+  private ringMatA: MeshStandardMaterial | null = null;
+  private ringMatB: MeshStandardMaterial | null = null;
+  private particleMaterial: PointsMaterial | null = null;
   private envTexture: Texture | null = null;
   private pmrem: PMREMGenerator | null = null;
   private resizeObserver: ResizeObserver;
@@ -128,6 +134,38 @@ export class BellScene {
     this.targetScroll = MathUtils.clamp(progress, 0, 1);
   }
 
+  setTheme(isLight: boolean): void {
+    if (this.bodyMaterial) {
+      this.bodyMaterial.color.setHex(isLight ? 0xc58b16 : 0xe9be57);
+      this.bodyMaterial.metalness = isLight ? (this.lite ? 0.42 : 0.78) : (this.lite ? 0.5 : 0.92);
+      this.bodyMaterial.roughness = isLight ? 0.28 : this.lite ? 0.28 : 0.24;
+      this.bodyMaterial.emissive.setHex(isLight ? 0x3b2304 : this.lite ? 0x3b2c0a : 0x000000);
+      this.bodyMaterial.emissiveIntensity = isLight ? 0.25 : this.lite ? 0.4 : 0;
+    }
+    if (this.letterMaterial) {
+      this.letterMaterial.color.setHex(isLight ? 0x18181b : 0xf8ecde);
+      this.letterMaterial.metalness = isLight ? 0.25 : this.lite ? 0.35 : 0.85;
+      this.letterMaterial.roughness = isLight ? 0.35 : this.lite ? 0.22 : 0.18;
+      this.letterMaterial.emissive.setHex(isLight ? 0x09090b : this.lite ? 0x3d372e : 0x000000);
+      this.letterMaterial.emissiveIntensity = isLight ? 0.15 : this.lite ? 0.4 : 0;
+    }
+    if (this.ringMatA) {
+      this.ringMatA.color.setHex(isLight ? 0xa16207 : 0xe9be57);
+      this.ringMatA.opacity = isLight ? 0.55 : 0.36;
+    }
+    if (this.ringMatB) {
+      this.ringMatB.color.setHex(isLight ? 0x78350f : 0xf8ecde);
+      this.ringMatB.opacity = isLight ? 0.32 : 0.2;
+    }
+    if (this.particleMaterial) {
+      this.particleMaterial.color.setHex(isLight ? 0xa16207 : 0xf2ce72);
+      this.particleMaterial.opacity = isLight ? 0.78 : 0.55;
+      this.particleMaterial.size = isLight ? 4.2 : this.lite ? 3.5 : 3.2;
+      this.particleMaterial.blending = isLight ? NormalBlending : AdditiveBlending;
+      this.particleMaterial.needsUpdate = true;
+    }
+  }
+
   start(): void {
     if (this.running || this.disposed) return;
     this.running = true;
@@ -177,6 +215,8 @@ export class BellScene {
       emissive: this.lite ? 0x3d372e : 0x000000,
       emissiveIntensity: this.lite ? 0.4 : 0,
     });
+    this.bodyMaterial = bodyMaterial;
+    this.letterMaterial = letterMaterial;
 
     const shapesGroup = new Group();
     for (const path of data.paths) {
@@ -212,6 +252,7 @@ export class BellScene {
       transparent: true,
       opacity: 0.36,
     });
+    this.ringMatA = ringMatA;
     const ringA = new Mesh(new TorusGeometry(radius, 1.4, 12, this.lite ? 64 : 96), ringMatA);
     ringA.rotation.set(Math.PI * 0.38, Math.PI * 0.14, 0);
     this.ringA = ringA;
@@ -225,6 +266,7 @@ export class BellScene {
         transparent: true,
         opacity: 0.2,
       });
+      this.ringMatB = ringMatB;
       const ringB = new Mesh(new TorusGeometry(radius * 1.22, 1.0, 10, 96), ringMatB);
       ringB.rotation.set(-Math.PI * 0.32, Math.PI * 0.28, 0);
       this.ringB = ringB;
@@ -255,6 +297,7 @@ export class BellScene {
       blending: AdditiveBlending,
       depthWrite: false,
     });
+    this.particleMaterial = material;
     this.particles = new Points(geometry, material);
     this.scene.add(this.particles);
   }
