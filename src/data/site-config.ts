@@ -82,6 +82,38 @@ export const heroMockPosts: HeroMockPostItem[] = [
     comments: 31,
     shares: 12,
   },
+  {
+    id: "phuc-khanh-1",
+    brandId: "phuc-khanh",
+    shortLogoName: "PHÚC KHÁNH",
+    pageName: "Phúc Khánh Digital",
+    caption:
+      "Làm dịch vụ ở địa phương có một nguyên tắc rất rõ: làm không kỹ thì đi vài vòng là ai cũng biết, còn làm tử tế thì khách cũ tự giới thiệu khách mới.\n\nPhúc Khánh Digital chọn giữ chữ tín từ năm giá trị nền tảng: Phúc, Tâm, Khánh, Nghĩa, Nhân — lịch đăng đúng giờ, rà từng dấu tiếng Việt và báo cáo số liệu thật từ trang.\n\n#PhucKhanhDigital #CaMau #VanHanhFanpage",
+    photoSrc: "/samples/phuc-khanh/post-1.jpg",
+    photoAlt: "Giữ chữ tín từ việc nhỏ - Phúc Tâm Khánh Nghĩa Nhân",
+    avatarSrc: "/brand/logo-mark.svg",
+    logoSrc: "/brand/logo-mark.svg",
+    scheduledAt: "19:00 · 26/11/2026",
+    likes: 192,
+    comments: 28,
+    shares: 15,
+  },
+  {
+    id: "phuc-khanh-studio-1",
+    brandId: "phuc-khanh-studio",
+    shortLogoName: "PK STUDIO",
+    pageName: "Phúc Khánh Studio",
+    caption:
+      "Một người quen nhìn chiến lược ở phòng khám lớn. Một người lăn lộn phát triển khách hàng. Một chàng IT từ xa quay về. Một người từng thức trắng ngoài cảng. Một cậu em út say mê từng linh kiện máy tính.\n\nNăm con người cùng ngồi chung một bàn, dựng lên Phúc Khánh Digital — nơi kỷ luật công nghệ gặp sự bền bỉ từ thực chiến.\n\n#PhucKhanhStudio #PhucKhanhDigital #CauChuyenKhoiNghiep",
+    photoSrc: "/samples/phuc-khanh-studio/post-1.jpg",
+    photoAlt: "Câu chuyện khởi nghiệp 5 thành viên Phúc Khánh Studio",
+    avatarSrc: "/samples/phuc-khanh-studio/avatar.jpg",
+    logoSrc: "/samples/phuc-khanh-studio/avatar.jpg",
+    scheduledAt: "19:00 · 27/11/2026",
+    likes: 215,
+    comments: 36,
+    shares: 19,
+  },
 ];
 
 export const heroMockPost = {
