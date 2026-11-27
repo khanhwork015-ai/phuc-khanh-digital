@@ -228,6 +228,7 @@ export class BellScene {
   private buildParticles(): void {
     const count = this.lite ? 80 : 220;
     const positions = new Float32Array(count * 3);
+    const scales = new Float32Array(count);
     const spreadX = Math.max(this.bellSize.x, 400) * 3.2;
     const spreadY = Math.max(this.bellSize.y, 400) * 2.4;
     const spreadZ = 900;
@@ -236,10 +237,12 @@ export class BellScene {
       positions[i * 3] = (Math.random() - 0.5) * spreadX;
       positions[i * 3 + 1] = (Math.random() - 0.5) * spreadY;
       positions[i * 3 + 2] = (Math.random() - 0.5) * spreadZ - 120;
+      scales[i] = 0.45 + Math.pow(Math.random(), 1.6) * 1.15;
     }
 
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", new BufferAttribute(positions, 3));
+    geometry.setAttribute("aScale", new BufferAttribute(scales, 1));
     const material = new PointsMaterial({
       color: 0xa16207,
       size: 4.2,
@@ -248,6 +251,11 @@ export class BellScene {
       blending: NormalBlending,
       depthWrite: false,
     });
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nattribute float aScale;")
+        .replace("gl_PointSize = size;", "gl_PointSize = size * aScale;");
+    };
     this.particles = new Points(geometry, material);
     this.scene.add(this.particles);
   }
