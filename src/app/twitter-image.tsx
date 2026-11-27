@@ -9,8 +9,8 @@ export const contentType = "image/png";
 
 /** Ảnh chia sẻ khi gửi link lên Facebook / Zalo: logo gốc (chữ đã outline) trên nền tối của trang. */
 export default async function OpengraphImage() {
-  const svg = await readFile(join(process.cwd(), "public/brand/logo-full.svg"));
-  const logo = `data:image/svg+xml;base64,${svg.toString("base64")}`;
+  const img = await readFile(join(process.cwd(), "public/brand/og-thumbnail.jpg"));
+  const src = `data:image/jpeg;base64,${img.toString("base64")}`;
 
   return new ImageResponse(
     (
@@ -22,11 +22,10 @@ export default async function OpengraphImage() {
           alignItems: "center",
           justifyContent: "center",
           background: "#09090B",
-          backgroundImage: "radial-gradient(circle at 50% 42%, rgba(233,190,87,0.16), rgba(9,9,11,0) 60%)",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logo} width={620} height={424} alt="" />
+        <img src={src} width={1200} height={630} style={{ objectFit: "cover" }} alt="" />
       </div>
     ),
     size,

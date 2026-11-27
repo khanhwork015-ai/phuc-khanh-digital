@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: "Phúc Khánh Digital",
-  url: "https://phuckhanhdigital.vn",
+  url: "https://phuckhanh.digital",
   description:
     "Dịch vụ vận hành Fanpage trọn gói cho SME Việt Nam: Brand Kit riêng, bài viết tự nhiên, ảnh gắn logo gốc, cổng duyệt bài 1 chạm và đăng đúng giờ.",
   nav: [

@@ -31,14 +31,24 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "vi_VN",
+    url: siteConfig.url,
     siteName: siteConfig.name,
     title: `${siteConfig.name} - Vận hành Fanpage trọn gói cho SME`,
     description: siteConfig.description,
+    images: [
+      {
+        url: "/brand/og-thumbnail.jpg",
+        width: 1200,
+        height: 800,
+        alt: `${siteConfig.name} - Vận hành Fanpage trọn gói cho SME`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${siteConfig.name} - Vận hành Fanpage trọn gói cho SME`,
     description: siteConfig.description,
+    images: ["/brand/og-thumbnail.jpg"],
   },
   robots: { index: true, follow: true },
 };
