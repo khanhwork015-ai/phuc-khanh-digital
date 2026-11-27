@@ -177,3 +177,46 @@ export function engineTimeToIso(raw: string): string | null {
   const d = new Date(raw.trim().replace(" ", "T"));
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
+
+export type BrandChecklist = { logo: boolean; brand_kit: boolean; forbidden_words: boolean; posts: number };
+
+export type BrandLink = {
+  slug: string;
+  name: string;
+  logo_url: string | null;
+  page_id: string;
+  page_name: string;
+  connected: boolean;
+  known_page: boolean;
+  checklist: BrandChecklist;
+};
+
+export type MetaPage = { id: string; name: string; linked_slug: string };
+
+export type BrandLinksResult = {
+  ok: boolean;
+  brands: BrandLink[];
+  pages: MetaPage[];
+  synced_at: string;
+  error?: string;
+};
+
+export type BrandLinkActionResult = { ok: boolean; message?: string; error?: string; held_posts?: number };
+
+/** Brands plus the Meta Fanpages the engine knows about (the engine holds no Meta token). */
+export async function listBrandLinks(): Promise<BrandLinksResult> {
+  return (await runEngine(["--brand-links"], 30_000)) as BrandLinksResult;
+}
+
+export async function linkBrandToPage(slug: string, pageId: string, actor: string): Promise<BrandLinkActionResult> {
+  return (await runEngine(["--link-brand", slug, "--page-id", pageId, "--actor-username", actor])) as BrandLinkActionResult;
+}
+
+export async function unlinkBrandFromPage(slug: string, actor: string): Promise<BrandLinkActionResult> {
+  return (await runEngine(["--unlink-brand", slug, "--actor-username", actor])) as BrandLinkActionResult;
+}
+
+/** Asks Javis (which holds the Meta connection) to refresh the Fanpage list in the background. */
+export async function requestMetaPagesSync(actor: string): Promise<BrandLinkActionResult> {
+  return (await runEngine(["--request-meta-sync", "--actor-username", actor])) as BrandLinkActionResult;
+}

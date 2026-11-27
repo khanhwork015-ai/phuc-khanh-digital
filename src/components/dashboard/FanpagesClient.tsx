@@ -4,6 +4,7 @@ import { RefreshCw, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { FanpageLinksPanel } from "./FanpageLinksPanel";
 
 type FanpageItem = {
   id: string;
@@ -142,6 +143,8 @@ export function FanpagesClient({ canToggle = false }: { canToggle?: boolean }) {
           <span>Quét lại từ Javis</span>
         </button>
       </div>
+
+      {canToggle && <FanpageLinksPanel onChanged={() => void loadFanpages()} />}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <button
