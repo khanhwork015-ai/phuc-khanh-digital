@@ -22,6 +22,18 @@ export function getJavisFanpagesDir(): string | null {
   return path.resolve(dir);
 }
 
+function buildCustomerCodeFromSlug(slug: string): string {
+  const clean = slug.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return `PKD-${clean || "CLIENT"}`;
+}
+
+function isTruncatedCustomerCode(currentCode: string, slug: string): boolean {
+  const clean = slug.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (clean.length <= 8) return false;
+  const truncatedPrefix = `PKD-${clean.slice(0, 8)}`;
+  return currentCode === truncatedPrefix || currentCode.startsWith(`${truncatedPrefix}-`);
+}
+
 export async function syncFromJavisLocalDir(): Promise<{
   enabled: boolean;
   customersSynced: number;
@@ -47,21 +59,32 @@ export async function syncFromJavisLocalDir(): Promise<{
     for (const item of parsedCustomers) {
       nameToSlug.set(item.businessName.toLowerCase(), item.slug);
       const existing = db
-        .prepare("SELECT id FROM customers WHERE javis_client_slug = ? LIMIT 1")
-        .get(item.slug) as { id: string } | undefined;
+        .prepare("SELECT id, code FROM customers WHERE javis_client_slug = ? LIMIT 1")
+        .get(item.slug) as { id: string; code: string } | undefined;
 
       const combinedNotes = [item.contractSummary, item.notes].filter(Boolean).join(" · ");
+      const expectedCode = buildCustomerCodeFromSlug(item.slug);
 
       if (existing) {
+        let nextCode = existing.code;
+        if (isTruncatedCustomerCode(existing.code, item.slug)) {
+          const conflict = db
+            .prepare("SELECT id FROM customers WHERE code = ? AND id != ? LIMIT 1")
+            .get(expectedCode, existing.id);
+          if (!conflict) {
+            nextCode = expectedCode;
+          }
+        }
         db.prepare(
           `UPDATE customers
-           SET business_name = ?, page_id = ?, contract_status = ?, notes = ?, updated_at = ?
+           SET code = ?, business_name = ?, page_id = ?, contract_status = ?, notes = ?, updated_at = ?
            WHERE id = ?`,
-        ).run(item.businessName, item.pageId || null, item.contractStatus, combinedNotes || null, now, existing.id);
+        ).run(nextCode, item.businessName, item.pageId || null, item.contractStatus, combinedNotes || null, now, existing.id);
         slugToCustomerId.set(item.slug, existing.id);
       } else {
         const id = crypto.randomUUID();
-        const code = `PKD-${item.slug.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "CLIENT"}`;
+        const codeConflict = db.prepare("SELECT id FROM customers WHERE code = ? LIMIT 1").get(expectedCode);
+        const code = codeConflict ? `${expectedCode}-${Date.now().toString(36).slice(-4).toUpperCase()}` : expectedCode;
         db.prepare(
           `INSERT INTO customers
            (id, code, javis_client_slug, page_id, full_name, business_name, phone, plan, source, contract_status, monthly_fee, notes, created_at, updated_at)
