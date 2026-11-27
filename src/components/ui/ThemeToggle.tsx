@@ -34,17 +34,17 @@ export function ThemeToggle({
   variant?: "compact" | "full";
   className?: string;
 }) {
-  const [preference, setPreference] = useState<ThemePreference>("system");
+  const [preference, setPreference] = useState<ThemePreference>("dark");
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as ThemePreference | null;
       const initial: ThemePreference =
-        saved === "light" || saved === "dark" || saved === "system" ? saved : "system";
+        saved === "light" || saved === "dark" || saved === "system" ? saved : "dark";
       setPreference(initial);
       applyThemeToDom(initial);
     } catch {
-      applyThemeToDom("system");
+      applyThemeToDom("dark");
     }
   }, []);
 

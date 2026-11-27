@@ -51,11 +51,11 @@ export const viewport: Viewport = {
   colorScheme: "dark light",
 };
 
-const themeInitScript = `(function(){try{var p=localStorage.getItem('pkd-theme');var r=(p==='light'||p==='dark')?p:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=r;document.documentElement.style.colorScheme=r;}catch(e){}})();`;
+const themeInitScript = `(function(){try{var p=localStorage.getItem('pkd-theme');var r=(p==='light'||p==='dark')?p:(p==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):'dark');document.documentElement.dataset.theme=r;document.documentElement.style.colorScheme=r;}catch(e){}})();`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi" suppressHydrationWarning className={`${beVietnam.variable} ${ibmPlexMono.variable}`}>
+    <html lang="vi" data-theme="dark" suppressHydrationWarning className={`${beVietnam.variable} ${ibmPlexMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
