@@ -148,7 +148,7 @@ export function PinGateOverlay({
       <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]" />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Logo />
           <div className="flex items-center gap-2">
             <ThemeToggle />
