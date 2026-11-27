@@ -56,6 +56,7 @@ type PortalOverview = {
     logoUrl: string | null;
     actions: ReviewAction[];
   }>;
+  internalReadyCount?: number;
 };
 
 const contentStatusLabel: Record<string, string> = {
@@ -74,7 +75,6 @@ export function PortalClient({ username }: { username: string }) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"content" | "brand">("content");
   const [contentFilter, setContentFilter] = useState<"pending" | "approved" | "published" | "all">("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   async function loadOverview(quiet = false) {
@@ -127,8 +127,6 @@ export function PortalClient({ username }: { username: string }) {
     return pendingItems.length > 0 ? items.filter((i) => i.status !== "pending_client") : items;
   }, [data, contentFilter, pendingItems.length]);
 
-  const selected = data?.contentItems.find((i) => i.id === selectedId) ?? null;
-
   async function decide(itemId: string, action: ReviewAction, feedback?: string) {
     const res = await fetch(`/api/portal/content/${itemId}/decision`, {
       method: "POST",
@@ -137,7 +135,6 @@ export function PortalClient({ username }: { username: string }) {
     });
     const json = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
     if (!res.ok || !json.ok) return { ok: false, message: json.message ?? "Thao tác thất bại." };
-    setSelectedId(null);
     setNotice(
       action === "approve"
         ? "Cảm ơn bạn đã duyệt. Bài viết đã được đưa vào lịch đăng."
@@ -195,10 +192,14 @@ export function PortalClient({ username }: { username: string }) {
                     {leadPlanLabels[data.customer.plan as LeadPlanValue] ?? data.customer.plan}
                   </p>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center sm:gap-3">
+                <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 sm:gap-3">
                   <div className="rounded-xl border border-line bg-canvas px-3 py-2">
                     <p className="text-lg font-bold text-accent">{counts.pending}</p>
-                    <p className="text-[11px] text-fg-3">Chờ duyệt</p>
+                    <p className="text-[11px] text-fg-3">Chờ bạn duyệt</p>
+                  </div>
+                  <div className="rounded-xl border border-line bg-canvas px-3 py-2">
+                    <p className="text-lg font-bold text-sky-300">{data.internalReadyCount ?? 0}</p>
+                    <p className="text-[11px] text-fg-3">Sẵn sàng chờ chuyển</p>
                   </div>
                   <div className="rounded-xl border border-line bg-canvas px-3 py-2">
                     <p className="text-lg font-bold text-fg">{counts.approved}</p>
@@ -285,17 +286,46 @@ export function PortalClient({ username }: { username: string }) {
                   ))}
                 </div>
 
+                {(data.internalReadyCount ?? 0) > 0 && (
+                  <div className="rounded-2xl border border-line bg-surface/80 px-4 py-3 text-xs text-fg-2 sm:text-sm">
+                    Hiện có <span className="font-semibold text-accent">{data.internalReadyCount} bài viết</span> đang sẵn sàng ở nội bộ và sẽ sớm được đội ngũ chuyển sang mục{" "}
+                    <span className="font-medium text-fg">Chờ bạn duyệt</span>.
+                  </div>
+                )}
+
                 {contentFilter === "all" && pendingItems.length > 0 && (
-                  <section className="space-y-3 rounded-2xl border border-line-accent bg-accent-muted/30 p-4 sm:p-5">
-                    <div className="flex items-center justify-between">
+                  <section className="space-y-4 rounded-2xl border border-line-accent bg-accent-muted/20 p-4 sm:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <h2 className="text-sm font-semibold text-accent">
                         Bài đang chờ bạn duyệt ({pendingItems.length})
                       </h2>
                       <span className="text-xs text-fg-3">Ưu tiên xử lý trước giờ đăng</span>
                     </div>
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                       {pendingItems.map((item) => (
-                        <PortalContentCard key={item.id} item={item} onSelect={() => setSelectedId(item.id)} />
+                        <PostReviewModal
+                          key={item.id}
+                          inline
+                          title={item.title}
+                          statusLabel={contentStatusLabel[item.status] ?? item.status}
+                          pageName={item.fanpageName || data.customer.businessName || "Fanpage"}
+                          logoUrl={item.logoUrl}
+                          timeLabel={formatPostTime(item.publishedAt || item.scheduledAt)}
+                          caption={item.caption}
+                          mediaUrls={item.mediaUrls}
+                          actions={item.actions}
+                          approveLabel="Duyệt bài này"
+                          approveHint="Sau khi bạn duyệt, Javis sẽ đưa bài vào lịch đăng chính thức trên Fanpage."
+                          readOnlyNote="Bài đang được xử lý, không cần thao tác."
+                          onAction={(action, feedback) => decide(item.id, action, feedback)}
+                          notes={
+                            item.clientFeedback ? (
+                              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-300">
+                                <span className="font-semibold">Góp ý của bạn:</span> {item.clientFeedback}
+                              </div>
+                            ) : undefined
+                          }
+                        />
                       ))}
                     </div>
                   </section>
@@ -308,9 +338,43 @@ export function PortalClient({ username }: { username: string }) {
                       : "Không có bài viết nào trong mục này."}
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                     {filteredItems.map((item) => (
-                      <PortalContentCard key={item.id} item={item} onSelect={() => setSelectedId(item.id)} />
+                      <PostReviewModal
+                        key={item.id}
+                        inline
+                        title={item.title}
+                        statusLabel={contentStatusLabel[item.status] ?? item.status}
+                        pageName={item.fanpageName || data.customer.businessName || "Fanpage"}
+                        logoUrl={item.logoUrl}
+                        timeLabel={formatPostTime(item.publishedAt || item.scheduledAt)}
+                        caption={item.caption}
+                        mediaUrls={item.mediaUrls}
+                        actions={item.actions}
+                        approveLabel="Duyệt bài này"
+                        approveHint="Sau khi bạn duyệt, Javis sẽ đưa bài vào lịch đăng chính thức trên Fanpage."
+                        readOnlyNote={item.status === "published" ? "Bài đã đăng." : "Bài đang được xử lý, không cần thao tác."}
+                        onAction={(action, feedback) => decide(item.id, action, feedback)}
+                        notes={
+                          <>
+                            {item.clientFeedback && (
+                              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-300">
+                                <span className="font-semibold">Góp ý của bạn:</span> {item.clientFeedback}
+                              </div>
+                            )}
+                            {item.publishedUrl && (
+                              <a
+                                href={item.publishedUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                              >
+                                Xem trên Facebook <ExternalLink size={12} />
+                              </a>
+                            )}
+                          </>
+                        }
+                      />
                     ))}
                   </div>
                 )}
@@ -344,89 +408,6 @@ export function PortalClient({ username }: { username: string }) {
         )}
       </main>
 
-      {selected && (
-        <PostReviewModal
-          key={selected.id}
-          title={selected.title}
-          statusLabel={contentStatusLabel[selected.status] ?? selected.status}
-          pageName={selected.fanpageName || data?.customer.businessName || "Fanpage"}
-          logoUrl={selected.logoUrl}
-          timeLabel={formatPostTime(selected.publishedAt || selected.scheduledAt)}
-          caption={selected.caption}
-          mediaUrls={selected.mediaUrls}
-          actions={selected.actions}
-          approveLabel="Duyệt bài này"
-          approveHint="Sau khi bạn duyệt, Javis sẽ đưa bài vào lịch đăng chính thức trên Fanpage."
-          readOnlyNote={selected.status === "published" ? "Bài đã đăng." : "Bài đang được xử lý, không cần thao tác."}
-          onAction={(action, feedback) => decide(selected.id, action, feedback)}
-          onClose={() => setSelectedId(null)}
-          notes={
-            <>
-              {selected.clientFeedback && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200">
-                  <span className="font-semibold">Góp ý của bạn:</span> {selected.clientFeedback}
-                </div>
-              )}
-              {selected.publishedUrl && (
-                <a
-                  href={selected.publishedUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
-                >
-                  Xem trên Facebook <ExternalLink size={12} />
-                </a>
-              )}
-            </>
-          }
-        />
-      )}
     </div>
-  );
-}
-
-function PortalContentCard({
-  item,
-  onSelect,
-}: {
-  item: PortalOverview["contentItems"][number];
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="group flex w-full gap-3 rounded-2xl border border-line bg-surface/80 p-4 text-left transition-colors hover:border-line-accent sm:p-5"
-    >
-      {item.mediaUrls[0] && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.mediaUrls[0]} alt="" className="size-16 shrink-0 rounded-xl border border-line object-cover" />
-      )}
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "rounded-lg border px-2.5 py-0.5 text-[11px] font-semibold",
-              item.status === "pending_client"
-                ? "border-line-accent bg-accent-muted text-accent"
-                : "border-line bg-canvas text-fg-2",
-            )}
-          >
-            {contentStatusLabel[item.status] ?? item.status}
-          </span>
-          <span className="font-mono text-[11px] text-fg-3">
-            {formatPostTime(item.publishedAt || item.scheduledAt)}
-          </span>
-        </div>
-        <h2 className="text-base font-semibold text-fg group-hover:text-accent">{item.title}</h2>
-        <p className="line-clamp-2 text-sm text-fg-2">{item.caption}</p>
-        {item.clientFeedback && (
-          <p className="line-clamp-2 text-xs text-amber-300">Góp ý của bạn: {item.clientFeedback}</p>
-        )}
-      </div>
-      <span className="hidden h-9 shrink-0 items-center rounded-xl border border-line bg-canvas px-3.5 text-xs font-medium text-fg-2 group-hover:text-accent sm:inline-flex">
-        {item.actions.includes("approve") ? "Xem và duyệt" : "Xem bài"}
-      </span>
-    </button>
   );
 }

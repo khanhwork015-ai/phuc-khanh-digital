@@ -95,10 +95,13 @@ export async function GET() {
       return order.indexOf(sa) - order.indexOf(sb) || (b.scheduledAt ?? "").localeCompare(a.scheduledAt ?? "");
     });
 
+  const internalReadyCount = posts.filter((p) => !customerCanSee(p)).length;
+
   return NextResponse.json({
     ok: true,
     customer,
     brandAssets: assets,
     contentItems,
+    internalReadyCount,
   });
 }
