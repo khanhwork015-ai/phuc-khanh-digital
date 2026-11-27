@@ -51,13 +51,13 @@ html[data-theme="light"] .pk-wordmark {
   filter: brightness(0.2) contrast(1.25);
 }
 
-html[data-theme="light"] .pk-hero-light-backdrop {
+html[data-theme="light"] .pk-hero-bell-mobile-backdrop {
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    transparent 42%,
-    rgb(9 9 11 / 0.55) 68%,
-    rgb(9 9 11 / 0.88) 100%
+    rgb(9 9 11 / 0.88) 20%,
+    rgb(9 9 11 / 0.92) 80%,
+    transparent 100%
   );
 }
 

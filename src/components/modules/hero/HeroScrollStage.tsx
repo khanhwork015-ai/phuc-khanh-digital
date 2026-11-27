@@ -42,7 +42,7 @@ export function HeroScrollStage({ text, bell }: HeroScrollStageProps) {
         <m.div
           aria-hidden
           style={{ x: backdropX, opacity: backdropOpacity }}
-          className="pk-hero-light-backdrop pointer-events-none absolute inset-0 -z-10 will-change-transform"
+          className="pk-hero-light-backdrop pointer-events-none absolute inset-0 -z-10 hidden will-change-transform lg:block"
         />
         <m.div
           style={{ scale: stageScale }}
@@ -57,6 +57,7 @@ export function HeroScrollStage({ text, bell }: HeroScrollStageProps) {
             style={{ y: bellY, scale: bellScale, opacity: bellOpacity }}
             className="relative mx-auto aspect-[656/538] w-[80vw] max-w-[340px] sm:w-[380px] lg:w-full lg:max-w-[500px]"
           >
+            <div className="pk-hero-bell-mobile-backdrop pointer-events-none absolute -inset-x-[30vw] -inset-y-6 -z-10 lg:hidden" />
             {bell}
           </m.div>
         </m.div>
