@@ -35,7 +35,7 @@ export function Logo({ className }: { className?: string }) {
         height={168}
         unoptimized
         priority
-        className="h-[26px] w-auto"
+        className="pk-wordmark h-[26px] w-auto"
       />
     </span>
   );
@@ -49,7 +49,7 @@ export function LogoFull({ className }: { className?: string }) {
       width={1012}
       height={692}
       unoptimized
-      className={cn("h-auto w-48", className)}
+      className={cn("pk-wordmark h-auto w-48", className)}
     />
   );
 }

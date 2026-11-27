@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRightLeft, ExternalLink, Search, Trash2 } from "lucide-react";
+import { ArrowRightLeft, ExternalLink, MessageCircle, Search, Trash2 } from "lucide-react";
 import { m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog, type ConfirmChangeItem } from "@/components/ui/ConfirmDialog";
@@ -28,6 +28,16 @@ const statusOptions: Array<{ value: LeadRow["status"]; label: string }> = [
   { value: "converted", label: "Đã chuyển đổi" },
   { value: "archived", label: "Lưu trữ" },
 ];
+
+function buildZaloUrl(phone: string): string {
+  const digits = phone.replace(/[^\d+]/g, "");
+  const normalized = digits.startsWith("+84")
+    ? `0${digits.slice(3)}`
+    : digits.startsWith("84") && digits.length >= 11
+      ? `0${digits.slice(2)}`
+      : digits.replace(/\+/g, "");
+  return `https://zalo.me/${normalized}`;
+}
 
 const statusLabelMap: Record<LeadRow["status"], string> = {
   new: "Mới",
@@ -290,35 +300,48 @@ export function LeadsClient({ canEdit = false }: { canEdit?: boolean }) {
                 {lead.note && <p className="text-xs text-fg-3">Ghi chú: {lead.note}</p>}
               </div>
 
-              {canEdit && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(lead)}
-                    className="inline-flex h-9 items-center rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
+              <div className="flex flex-wrap items-center gap-2">
+                {lead.phone && (
+                  <a
+                    href={buildZaloUrl(lead.phone)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line-accent bg-accent-muted/40 px-3 text-xs font-medium text-accent transition-colors hover:bg-accent-muted"
                   >
-                    Cập nhật
-                  </button>
-                  {lead.status !== "converted" && (
+                    <MessageCircle size={13} />
+                    <span>Nhắn Zalo</span>
+                  </a>
+                )}
+                {canEdit && (
+                  <>
                     <button
                       type="button"
-                      onClick={() => openConvertModal(lead)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-canvas hover:bg-accent-hover"
+                      onClick={() => openEditModal(lead)}
+                      className="inline-flex h-9 items-center rounded-xl border border-line bg-elevated px-3 text-xs font-medium text-fg hover:border-line-strong"
                     >
-                      <ArrowRightLeft size={13} />
-                      <span>Chuyển thành Khách</span>
+                      Cập nhật
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => requestDeleteLead(lead)}
-                    aria-label={`Xóa lead ${lead.fullName}`}
-                    className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              )}
+                    {lead.status !== "converted" && (
+                      <button
+                        type="button"
+                        onClick={() => openConvertModal(lead)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-canvas hover:bg-accent-hover"
+                      >
+                        <ArrowRightLeft size={13} />
+                        <span>Chuyển thành Khách</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => requestDeleteLead(lead)}
+                      aria-label={`Xóa lead ${lead.fullName}`}
+                      className="inline-flex size-9 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-red-500/40 hover:text-red-400"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </>
+                )}
+              </div>
             </m.div>
           ))}
         </div>

@@ -44,13 +44,21 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090B",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F7F6F2" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090B" },
+  ],
+  colorScheme: "dark light",
 };
+
+const themeInitScript = `(function(){try{var p=localStorage.getItem('pkd-theme');var r=(p==='light'||p==='dark')?p:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=r;document.documentElement.style.colorScheme=r;}catch(e){}})();`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi" className={`${beVietnam.variable} ${ibmPlexMono.variable}`}>
+    <html lang="vi" suppressHydrationWarning className={`${beVietnam.variable} ${ibmPlexMono.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         <SmoothScrollProvider>
           {children}

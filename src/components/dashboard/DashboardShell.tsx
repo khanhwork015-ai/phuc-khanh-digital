@@ -18,6 +18,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { UserRole } from "@/db/types";
 import { roleLabels } from "@/lib/permissions";
 import { easeOutExpo } from "@/lib/theme";
@@ -126,6 +127,8 @@ export function DashboardShell({
         </div>
 
         <div className="space-y-2 border-t border-line pt-4">
+          <ThemeToggle variant="full" />
+
           {role === "ADMIN" && (
             <a
               href={JAVIS_URL}

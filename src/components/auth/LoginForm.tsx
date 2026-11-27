@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/ui/Logo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { easeOutExpo } from "@/lib/theme";
 
 export function LoginForm({ nextPath }: { nextPath?: string }) {
@@ -76,6 +77,7 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
           <span>Về trang chủ</span>
         </Link>
         <Logo />
+        <ThemeToggle />
       </div>
 
       <div className="rounded-2xl border border-line bg-surface/90 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">

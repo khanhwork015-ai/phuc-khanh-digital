@@ -4,6 +4,7 @@ import { Check, KeyRound, Loader2, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 type PinStep = "verify" | "create" | "confirm";
@@ -147,11 +148,14 @@ export function PinGateOverlay({
       <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]" />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between gap-2">
           <Logo />
-          <span className="rounded-lg border border-line bg-surface px-2.5 py-1 font-mono text-xs text-fg-2">
-            {username}
-          </span>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <span className="rounded-lg border border-line bg-surface px-2.5 py-1 font-mono text-xs text-fg-2">
+              {username}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-col items-center rounded-2xl border border-line bg-surface/90 px-6 py-10 text-center shadow-2xl shadow-black/40 backdrop-blur-xl sm:px-8">

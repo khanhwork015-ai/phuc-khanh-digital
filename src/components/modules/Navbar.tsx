@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { ButtonLink } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { siteConfig } from "@/data/site-config";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,7 @@ export function Navbar() {
         </ul>
 
         <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle className="hidden sm:inline-flex" />
           <ButtonLink href={siteConfig.cta.href} size="sm" className="hidden sm:inline-flex">
             {siteConfig.cta.label}
           </ButtonLink>
@@ -103,9 +105,15 @@ export function Navbar() {
                 </li>
               ))}
             </ul>
-            <ButtonLink href={siteConfig.cta.href} onClick={() => setOpen(false)} className="mt-5 w-full">
-              {siteConfig.cta.label}
-            </ButtonLink>
+            <div className="mt-5 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-fg-2">Giao diện</span>
+                <ThemeToggle />
+              </div>
+              <ButtonLink href={siteConfig.cta.href} onClick={() => setOpen(false)} className="w-full">
+                {siteConfig.cta.label}
+              </ButtonLink>
+            </div>
           </m.div>
         )}
       </AnimatePresence>

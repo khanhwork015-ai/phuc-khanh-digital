@@ -9,6 +9,7 @@ import { formatPostTime } from "@/components/content/FacebookPostPreview";
 import { PostReviewModal, type ReviewAction } from "@/components/content/PostReviewModal";
 import { BrandKitSummary } from "@/components/ui/BrandKitSummary";
 import { Logo } from "@/components/ui/Logo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { leadPlanLabels, type LeadPlanValue } from "@/lib/lead-fields";
 import { easeOutExpo } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -153,7 +154,8 @@ export function PortalClient({ username }: { username: string }) {
           <Link href="/">
             <Logo />
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <ThemeToggle />
             <span className="hidden text-xs text-fg-2 sm:inline">{username}</span>
             <button
               type="button"
