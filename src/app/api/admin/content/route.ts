@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSqliteDb } from "@/db/sqlite";
 import { requireDashboardReadApi } from "@/lib/api-auth";
-import { adminActions, listBridgePosts, mediaUrlFor } from "@/lib/approval-bridge";
+import { adminActions, listBrandLinks, listBridgePosts, mediaUrlFor } from "@/lib/approval-bridge";
 import { syncFromJavisLocalDir } from "@/lib/javis-fs";
 
 export async function GET() {
@@ -10,7 +10,15 @@ export async function GET() {
 
   const syncResult = await syncFromJavisLocalDir();
   const db = getSqliteDb();
-  const posts = new Map((await listBridgePosts().catch(() => [])).map((p) => [p.file, p]));
+  const [bridgePosts, brandLinks] = await Promise.all([
+    listBridgePosts().catch(() => []),
+    listBrandLinks().catch(() => null),
+  ]);
+  const posts = new Map(bridgePosts.map((p) => [p.file, p]));
+  const brandConnectedMap = new Map<string, boolean>();
+  for (const brand of brandLinks?.brands ?? []) {
+    brandConnectedMap.set(brand.slug, Boolean(brand.connected));
+  }
 
   const rows = db
     .prepare(
@@ -38,6 +46,9 @@ export async function GET() {
   const items = rows
     .map((r) => {
       const post = posts.get(r.file);
+      const slug = post?.fanpage_slug || r.customerSlug || "";
+      const fanpageConnected =
+        brandConnectedMap.size > 0 ? Boolean(brandConnectedMap.get(slug)) : true;
       return {
         id: r.id,
         code: post?.code ?? r.file,
@@ -49,6 +60,7 @@ export async function GET() {
         scheduledAt: r.scheduledAt,
         customerName: post?.fanpage_name || r.customerName,
         customerSlug: r.customerSlug,
+        fanpageConnected,
         logoUrl: post?.fanpage_logo ? mediaUrlFor(post.fanpage_logo) : null,
         feedback: post?.feedback ?? "",
         feedbackHistory: post?.feedback_history ?? "",

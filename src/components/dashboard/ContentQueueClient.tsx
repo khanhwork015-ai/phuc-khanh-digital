@@ -19,6 +19,7 @@ type ContentRow = {
   scheduledAt: string | null;
   customerName: string;
   customerSlug: string | null;
+  fanpageConnected?: boolean;
   logoUrl: string | null;
   feedback: string;
   feedbackHistory: string;
@@ -37,7 +38,7 @@ const statusLabel: Record<string, string> = {
   published: "Đã đăng",
 };
 
-const tabs = [
+const connectedTabs = [
   { value: "all", label: "Tất cả" },
   { value: "pending_review", label: "Chờ duyệt (Nội bộ)" },
   { value: "pending_client", label: "Chờ khách duyệt" },
@@ -47,7 +48,23 @@ const tabs = [
   { value: "published", label: "Đã đăng" },
 ];
 
-export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
+const demoTabs = [
+  { value: "all", label: "Tất cả" },
+  { value: "pending_review", label: "Chờ duyệt (Nội bộ)" },
+  { value: "pending_client", label: "Chờ khách duyệt" },
+  { value: "changes_requested", label: "Đang sửa lại" },
+  { value: "approved", label: "Đã duyệt" },
+];
+
+export function ContentQueueClient({
+  canEdit = false,
+  mode = "connected",
+}: {
+  canEdit?: boolean;
+  mode?: "connected" | "demo";
+}) {
+  const isDemo = mode === "demo";
+  const tabs = isDemo ? demoTabs : connectedTabs;
   const [items, setItems] = useState<ContentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
@@ -100,9 +117,14 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
     void loadContent();
   }, [loadContent]);
 
+  const scopedItems = useMemo(
+    () => items.filter((item) => (isDemo ? item.fanpageConnected === false : item.fanpageConnected !== false)),
+    [items, isDemo],
+  );
+
   const brands = useMemo(() => {
     const map = new Map<string, { key: string; name: string; logoUrl: string | null; total: number; pending: number }>();
-    for (const item of items) {
+    for (const item of scopedItems) {
       const key = item.customerSlug || item.customerName;
       const existing = map.get(key);
       if (existing) {
@@ -119,11 +141,11 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
       }
     }
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"));
-  }, [items]);
+  }, [scopedItems]);
 
   const brandAndSearchFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return items.filter((item) => {
+    return scopedItems.filter((item) => {
       const key = item.customerSlug || item.customerName;
       if (brandFilter !== "all" && key !== brandFilter) return false;
       if (!q) return true;
@@ -134,7 +156,7 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
         item.caption.toLowerCase().includes(q)
       );
     });
-  }, [items, brandFilter, search]);
+  }, [scopedItems, brandFilter, search]);
 
   const filtered = useMemo(
     () =>
@@ -174,8 +196,17 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent">Đồng bộ Javis OS</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-fg">Sổ Duyệt Bài</h1>
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-accent">
+            {isDemo ? "Bài mẫu khách mới" : "Đồng bộ Javis OS"}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-fg">
+            {isDemo ? "Bài Demo (Chưa gắn Fanpage)" : "Sổ Duyệt Bài"}
+          </h1>
+          <p className="mt-1 text-xs text-fg-2">
+            {isDemo
+              ? "Bài viết mẫu cho khách chưa kết nối Fanpage. Admin xem, yêu cầu sửa hoặc duyệt cho khách xem demo trên Portal; sau khi gắn Fanpage ở tab Kết nối, bài sẽ chuyển sang Sổ Duyệt Bài."
+              : "Chỉ hiển thị bài viết của khách hàng đã kết nối Fanpage Meta."}
+          </p>
           {syncInfo && <p className="mt-1 text-xs text-emerald-300">{syncInfo}</p>}
         </div>
         <button
@@ -235,7 +266,7 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
                     )
                   ) : null}
                   <span className="truncate">
-                    {activeBrand ? activeBrand.name : `Tất cả khách (${items.length})`}
+                    {activeBrand ? activeBrand.name : `Tất cả khách (${scopedItems.length})`}
                   </span>
                 </span>
                 <ChevronDown
@@ -267,7 +298,7 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
                       )}
                     >
                       <span>Tất cả khách</span>
-                      <span className="font-mono text-[11px] opacity-75">{items.length}</span>
+                      <span className="font-mono text-[11px] opacity-75">{scopedItems.length}</span>
                     </button>
 
                     {brands.map((b) => (
@@ -337,7 +368,7 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
               )}
             >
               <span>Tất cả</span>
-              <span className="font-mono text-[11px] opacity-75">{items.length}</span>
+              <span className="font-mono text-[11px] opacity-75">{scopedItems.length}</span>
             </button>
             {brands.map((b) => (
               <button
@@ -435,7 +466,11 @@ export function ContentQueueClient({ canEdit = false }: { canEdit?: boolean }) {
               mediaUrls={item.mediaUrls}
               actions={canEdit ? item.actions : []}
               approveLabel="Gửi khách duyệt"
-              approveHint="Admin duyệt bài này. Nếu fanpage có tài khoản khách, bài chuyển sang Chờ khách duyệt; nếu không, Javis hẹn lịch đăng ngay."
+              approveHint={
+                isDemo
+                  ? "Admin duyệt bài demo này. Nếu khách đã có tài khoản Portal, bài chuyển sang Chờ khách duyệt để khách xem mẫu (chưa hẹn đăng Facebook vì chưa gắn Fanpage)."
+                  : "Admin duyệt bài này. Nếu fanpage có tài khoản khách, bài chuyển sang Chờ khách duyệt; nếu không, Javis hẹn lịch đăng ngay."
+              }
               readOnlyNote={canEdit ? undefined : "Chế độ chỉ xem (không có quyền thao tác duyệt bài)."}
               onAction={(action, feedback) => decide(item, action, feedback)}
               notes={
